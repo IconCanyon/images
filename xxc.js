@@ -45,13 +45,19 @@ class CodeMagic extends HTMLElement {
 
         this.innerHTML = `
         <div class="cm-wrapper">
+
             <div class="cm-tabs"></div>
+
             <div class="cm-body">
+
                 <div class="cm-code" contenteditable="true" spellcheck="false"></div>
+
                 <div class="cm-preview">
                     <iframe></iframe>
                 </div>
+
             </div>
+
         </div>
         `;
 
@@ -59,39 +65,64 @@ class CodeMagic extends HTMLElement {
         const codeBox = this.querySelector(".cm-code");
         this.iframe = this.querySelector("iframe");
 
-        // دالة التلوين البرمجي المتقدمة والموسعة
+        const escapeHtml = (value) => value
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+
+        const highlightPlain = (text) => text.replace(
+            /(\/\*[\s\S]*?\*\/|\/\/.*)|("[^"]*"|'[^']*'|`[^`]*`)|\b(const|let|var|function|return|if|else|for|while|class|new|async|await|import|export|from|this|document|window|display|color|background|border|padding|margin|width|height|font|position|flex|grid)\b|\b([0-9]+(?:\.[0-9]+)?(?:px|rem|em|%|vh|vw|s|ms)?)\b|([{}])|([\[\]])|([()])|([=+\-*\/%<>!?:|&.,;])/g,
+            (match, comment, string, keyword, number, brace, bracket, paren, operator) => {
+                if (comment) return `<span class="cm-syntax-comment">${comment}</span>`;
+                if (string) return `<span class="cm-syntax-string">${string}</span>`;
+                if (keyword) return `<span class="cm-syntax-keyword">${keyword}</span>`;
+                if (number) return `<span class="cm-syntax-number">${number}</span>`;
+                if (brace) return `<span class="cm-syntax-brace">${brace}</span>`;
+                if (bracket) return `<span class="cm-syntax-bracket">${bracket}</span>`;
+                if (paren) return `<span class="cm-syntax-paren">${paren}</span>`;
+                if (operator) return `<span class="cm-syntax-operator">${operator}</span>`;
+                return match;
+            }
+        );
+
+        const highlightHtmlTag = (tag) => {
+            const commentMatch = tag.match(/^(&lt;!--)([\s\S]*?)(--&gt;)$/);
+            if (commentMatch) {
+                return `<span class="cm-syntax-comment">${commentMatch[1]}${commentMatch[2]}${commentMatch[3]}</span>`;
+            }
+
+            return tag.replace(
+                /^(&lt;\/?)([a-zA-Z][\w:-]*|![A-Z]+)?([\s\S]*?)(&gt;)$/,
+                (_, open, name = "", attrs = "", close) => {
+                    const coloredAttrs = attrs.replace(
+                        /([\w:-]+)(\s*=\s*)("[^"]*"|'[^']*'|[^\s"'=&gt;]+)/g,
+                        (attrText, attrName, eq, attrValue) => {
+                            const attrClass = /^(id|class|href|src|alt|title|name|type|rel|aria-[\w-]+|data-[\w-]+)$/i.test(attrName)
+                                ? "cm-syntax-attr-important"
+                                : "cm-syntax-attr";
+
+                            return `<span class="${attrClass}">${attrName}</span><span class="cm-syntax-operator">${eq}</span><span class="cm-syntax-string">${attrValue}</span>`;
+                        }
+                    );
+
+                    return `<span class="cm-syntax-tag">${open}</span><span class="cm-syntax-tag-name">${name}</span>${coloredAttrs}<span class="cm-syntax-tag">${close}</span>`;
+                }
+            );
+        };
+
         const highlightCode = (text) => {
             if (!text) return "";
 
-            // 1. تحويل الرموز الأساسية لمنع تنفيذ الـ HTML في محرر الكود
-            let escaped = text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;");
+            const escaped = escapeHtml(text);
 
-            // 2. تلوين النصوص داخل الاقتباسات المزدوجة والفردية ("..." أو '...')
-            escaped = escaped.replace(/(["'])(?:(?=(\\?))\2.)*?\1/g, '<span class="cm-syntax-string">$&</span>');
+            if (this.currentLang === "html") {
+                return escaped
+                    .split(/(&lt;!--[\s\S]*?--&gt;|&lt;\/?[a-zA-Z!][\s\S]*?&gt;)/g)
+                    .map(part => part.startsWith("&lt;") ? highlightHtmlTag(part) : highlightPlain(part))
+                    .join("");
+            }
 
-            // 3. تلوين الكلمات المفتاحية والخصائص الشائعة (class, id, href, style, src...)
-            const keywords = /\b(class|id|href|style|src|type|const|let|var|function|return|if|else|for|while|import|export)\b/g;
-            escaped = escaped.replace(keywords, '<span class="cm-syntax-keyword">$&</span>');
-
-            // 4. تلوين المعاملات الرياضية والمنطقية (= , + , - , * , /)
-            escaped = escaped.replace(/([=+\-*/])/g, '<span class="cm-syntax-operator">$1</span>');
-
-            // 5. تلوين الأقواس بجميع أنواعها
-            escaped = escaped.replace(/(\{)/g, '<span class="cm-syntax-brace">$1</span>')
-                             .replace(/(\})/g, '<span class="cm-syntax-brace">$1</span>')
-                             .replace(/(\[)/g, '<span class="cm-syntax-bracket">$1</span>')
-                             .replace(/(\])/g, '<span class="cm-syntax-bracket">$1</span>')
-                             .replace(/(\()/g, '<span class="cm-syntax-paren">$1</span>')
-                             .replace(/(\))/g, '<span class="cm-syntax-paren">$1</span>');
-
-            // 6. تلوين علامات الـ HTML والأقواس الزاوية للوسوم (&lt; و &gt;)
-            escaped = escaped.replace(/(&lt;\/?[a-zA-Z0-9!:-]+)/g, '<span class="cm-syntax-tag">$1</span>')
-                             .replace(/(&gt;)/g, '<span class="cm-syntax-tag">$1</span>');
-
-            return escaped;
+            return highlightPlain(escaped);
         };
 
         const updatePreview = () => {
@@ -102,60 +133,79 @@ class CodeMagic extends HTMLElement {
 <style>${this.codes.css}</style>
 </head>
 <body>
+
 ${this.codes.html}
+
 <script>
 ${this.codes.js}
 <\/script>
+
 </body>
 </html>
 `;
             this.iframe.srcdoc = finalCode;
         };
 
-        // دالة ذكية لإرجاع المؤشر لنفس مكانه النصي الأصلي بدقة بعد إعادة رندرة الـ HTML
-        const setCodeWithHighlight = (text) => {
+        const getCaretOffset = () => {
             const selection = window.getSelection();
-            let offset = 0;
-
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                const preCaretRange = range.cloneRange();
-                preCaretRange.selectNodeContents(codeBox);
-                preCaretRange.setEnd(range.endContainer, range.endOffset);
-                offset = preCaretRange.toString().length;
+            if (!selection.rangeCount || !codeBox.contains(selection.anchorNode)) {
+                return 0;
             }
 
-            // معالجة مشكلة السطر الأخير الفارغ في المتصفحات
-            const targetText = text.endsWith('\n') ? text + ' ' : text;
-            codeBox.innerHTML = highlightCode(targetText);
+            const range = selection.getRangeAt(0);
+            const preCaretRange = range.cloneRange();
+            preCaretRange.selectNodeContents(codeBox);
+            preCaretRange.setEnd(range.endContainer, range.endOffset);
+            return preCaretRange.toString().length;
+        };
 
-            if (offset > 0) {
-                const restoreCaret = (el, offset) => {
-                    let currentOffset = 0;
-                    const nodeQueue = [el];
-                    while (nodeQueue.length > 0) {
-                        const node = nodeQueue.shift();
-                        if (node.nodeType === Node.TEXT_NODE) {
-                            if (currentOffset + node.length >= offset) {
-                                const range = document.createRange();
-                                range.setStart(node, offset - currentOffset);
-                                range.setEnd(node, offset - currentOffset);
-                                selection.removeAllRanges();
-                                selection.addRange(range);
-                                return true;
-                            }
-                            currentOffset += node.length;
-                        } else {
-                            let i = node.childNodes.length;
-                            while (i--) {
-                                nodeQueue.unshift(node.childNodes[i]);
-                            }
-                        }
-                    }
-                    return false;
-                };
-                restoreCaret(codeBox, offset);
+        const restoreCaret = (offset) => {
+            const selection = window.getSelection();
+            const walker = document.createTreeWalker(codeBox, NodeFilter.SHOW_TEXT);
+            let currentOffset = 0;
+            let node = walker.nextNode();
+
+            while (node) {
+                const nextOffset = currentOffset + node.length;
+                if (nextOffset >= offset) {
+                    const range = document.createRange();
+                    range.setStart(node, offset - currentOffset);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    return;
+                }
+                currentOffset = nextOffset;
+                node = walker.nextNode();
             }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeBox);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        };
+
+        const normalizeEditorText = () => codeBox.textContent.replace(/\u00a0/g, " ");
+
+        const insertTextAtCaret = (text) => {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            const node = document.createTextNode(text);
+            range.insertNode(node);
+            range.setStartAfter(node);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        };
+
+        const setCodeWithHighlight = (text) => {
+            const offset = getCaretOffset();
+            codeBox.innerHTML = highlightCode(text);
+            restoreCaret(offset);
         };
 
         available.forEach((lang, index) => {
@@ -175,36 +225,22 @@ ${this.codes.js}
         });
 
         codeBox.addEventListener("input", () => {
-            // استخدام innerText يضمن جلب النصوص مع النزول لسطر جديد بشكل نقي وصحيح
-            let text = codeBox.innerText;
-            
-            // إصلاح توافق المتصفحات عند تفريغ الصندوق تماماً
-            if (text === '\n') text = '';
-
+            const text = normalizeEditorText();
             this.codes[this.currentLang] = text;
+
             setCodeWithHighlight(text);
             updatePreview();
         });
 
-        // إصلاح مشكلة ضغط الـ Enter ومنع المتصفح من إفساد الهيكل البرمجي بالـ div
         codeBox.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
                 e.preventDefault();
-                const selection = window.getSelection();
-                if (selection.rangeCount > 0) {
-                    const range = selection.getRangeAt(0);
-                    // إدراج محرف سطر جديد نقي ومباشر
-                    const textNode = document.createTextNode("\n");
-                    range.deleteContents();
-                    range.insertNode(textNode);
-                    range.setStartAfter(textNode);
-                    range.setEndAfter(textNode);
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-                    
-                    // إطلاق حدث التحديث يدوياً ليتم إعادة التلوين فوراً بناء على المحرف الجديد
-                    codeBox.dispatchEvent(new Event("input"));
-                }
+                insertTextAtCaret("\n");
+                codeBox.dispatchEvent(new InputEvent("input", {
+                    bubbles: true,
+                    inputType: "insertLineBreak",
+                    data: "\n"
+                }));
             }
         });
 
@@ -228,16 +264,17 @@ margin:20px 0;
 .cm-wrapper{
 width: 900px;
 max-width: 100%;
-border:1px solid #333;
+border:1px solid #ddd;
 border-radius:12px;
+/*overflow:hidden;*/
 font-family:Arial;
-background: #1e1e1e; /* تحويل الثيم بالكامل لثيم داكن احترافي يناسب المطورين */
+background: #fafafa;
 }
 
 .cm-tabs{
 display: flex;
-background: #252526;
-border-bottom: 1px solid #2d2d2d;
+background: #fafafa;
+border-bottom: 1px solid #0000;
 height: 36px;
 overflow: hidden;
 border-radius: 12px 12px 0px 0px;
@@ -249,20 +286,18 @@ padding: 10px 0;
 cursor: pointer;
 background: none;
 width: 100px;
-color: #858585;
 }
 
 .cm-tab.active{
-background: #1e1e1e;
+background: #ffffff;
 font-weight: bold;
-color: #fff;
-box-shadow: 0px -3px 0px #007acc inset;
+box-shadow: 0px -3px 0px #3b91e1 inset;
 }
 
 .cm-body{
 display: flex;
 height: 500px;
-background: #1e1e1e;
+background: #fafafa;
 border-radius: 10px
 }
 .cm-body div {
@@ -274,22 +309,26 @@ border-radius: 10px
 padding: 15px;
 overflow: auto;
 white-space: pre-wrap;
-color: #d4d4d4;
-font-family: 'Courier New', Courier, monospace;
+color: #5e656b;
+font-family: monospace;
 outline: none;
 direction: ltr;
 text-align: left;
-width: 50%;
+tab-size: 4;
 }
 
-/* فئات وألوان التلوين البرمجي الإضافية والجديدة */
-.cm-syntax-tag { color: #569cd6; font-weight: bold; }       /* الوسوم الكودية وأقواسها مثل < > */
-.cm-syntax-keyword { color: #c586c0; font-weight: bold; }   /* الكلمات الدلالية مثل id, class, href */
-.cm-syntax-operator { color: #d4d4d4; font-weight: bold; }  /* المعاملات مثل = , + , - */
-.cm-syntax-string { color: #ce9178; }                       /* النصوص داخل الاقتباسات "strings" */
-.cm-syntax-brace { color: #ffd700; font-weight: bold; }     /* الأقواس { } */
-.cm-syntax-bracket { color: #da70d6; font-weight: bold; }   /* الأقواس المربعة [ ] */
-.cm-syntax-paren { color: #17a2b8; font-weight: bold; }     /* الأقواس الدائرية ( ) */
+.cm-syntax-tag { color: #2f7ed8; font-weight: 700; }
+.cm-syntax-tag-name { color: #0f8f78; font-weight: 700; }
+.cm-syntax-attr { color: #8a5cf6; }
+.cm-syntax-attr-important { color: #d97706; font-weight: 700; }
+.cm-syntax-string { color: #15803d; }
+.cm-syntax-keyword { color: #b91c1c; font-weight: 700; }
+.cm-syntax-number { color: #0e7490; }
+.cm-syntax-comment { color: #7c8794; font-style: italic; }
+.cm-syntax-operator { color: #db2777; font-weight: 700; }
+.cm-syntax-brace { color: #ca8a04; font-weight: 700; }
+.cm-syntax-bracket { color: #9333ea; font-weight: 700; }
+.cm-syntax-paren { color: #0891b2; font-weight: 700; }
 
 .cm-preview{
 margin: 4px;
@@ -297,7 +336,7 @@ margin-left: 0;
 font-family: monospace;
 border-radius: 10px;
 background: white;
-box-shadow: 0 0 0 1px #2d2d2d;
+box-shadow: 0 0 0 1px #dddddd;
 width: 50%;
 }
 
@@ -306,7 +345,6 @@ width:100%;
 height:100%;
 border:none;
 border-radius: 10px;
-background: #ffffff;
 }
 `;
 
