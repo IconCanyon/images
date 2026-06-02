@@ -258,7 +258,6 @@ flex: 1 1;
 }
 
 .cm-code{
-width: 50%;
 padding: 15px;
 overflow: auto;
 white-space: pre-wrap;
