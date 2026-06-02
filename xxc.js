@@ -223,8 +223,9 @@ width: 900px;
 max-width: 100%;
 border:1px solid #ddd;
 border-radius:12px;
-overflow:hidden;
+/*overflow:hidden;*/
 font-family:Arial;
+background: #fafafa;
 }
 
 .cm-tabs{
@@ -232,6 +233,8 @@ display: flex;
 background: #fafafa;
 border-bottom: 1px solid #0000;
 height: 36px;
+overflow: hidden;
+border-radius: 12px 12px 0px 0px;
 }
 
 .cm-tab{
@@ -252,9 +255,11 @@ box-shadow: 0px -3px 0px #3b91e1 inset;
 display: flex;
 height: 500px;
 background: #fafafa;
+border-radius: 10px
 }
 .cm-body div {
-flex: 1 1;
+    flex: 1 1;
+    scrollbar-color: #525d6547 transparent;
 }
 
 .cm-code{
