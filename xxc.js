@@ -127,6 +127,8 @@ margin:20px 0;
 }
 
 .cm-wrapper{
+width: 900px;
+max-width: 100%;
 border:1px solid #ddd;
 border-radius:12px;
 overflow:hidden;
