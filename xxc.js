@@ -307,7 +307,8 @@ border-radius: 10px
 
 .cm-code{
 padding: 15px;
-overflow: auto;
+padding-right: 0px;
+overflow: scroll;
 white-space: pre-wrap;
 color: #5e656b;
 font-family: monospace;
