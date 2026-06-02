@@ -34,7 +34,6 @@ class CodeMagic extends HTMLElement {
             item.js ? fetch(item.js).then(r => r.text()).catch(() => "") : ""
         ]);
 
-        // تخزين الأكواد في كائن محلي داخل المكون لتسهيل تعديلها
         this.codes = {
             html: htmlCode,
             css: cssCode,
@@ -46,19 +45,13 @@ class CodeMagic extends HTMLElement {
 
         this.innerHTML = `
         <div class="cm-wrapper">
-
             <div class="cm-tabs"></div>
-
             <div class="cm-body">
-
                 <div class="cm-code" contenteditable="true" spellcheck="false"></div>
-
                 <div class="cm-preview">
                     <iframe></iframe>
                 </div>
-
             </div>
-
         </div>
         `;
 
@@ -66,35 +59,41 @@ class CodeMagic extends HTMLElement {
         const codeBox = this.querySelector(".cm-code");
         this.iframe = this.querySelector("iframe");
 
-        // دالة لتلوين الكود داخل ديف التحرير دون فقدان مؤشر الكتابة (Caret)
+        // دالة التلوين البرمجي المتقدمة والموسعة
         const highlightCode = (text) => {
             if (!text) return "";
-            
-            // تحويل الرموز الخاصة بـ HTML أولاً لتجنب مشاكل الرندرة
+
+            // 1. تحويل الرموز الأساسية لمنع تنفيذ الـ HTML في محرر الكود
             let escaped = text
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;");
 
-            // تلوين الوسوم ومحتواها: &lt;...&gt;
-            escaped = escaped.replace(/(&lt;\/?[a-zA-Z0-9!:-]+.*?&gt;)/g, '<span class="cm-syntax-tag">$1</span>');
+            // 2. تلوين النصوص داخل الاقتباسات المزدوجة والفردية ("..." أو '...')
+            escaped = escaped.replace(/(["'])(?:(?=(\\?))\2.)*?\1/g, '<span class="cm-syntax-string">$&</span>');
 
-            // تلوين الأقواس الحاصرة {}
+            // 3. تلوين الكلمات المفتاحية والخصائص الشائعة (class, id, href, style, src...)
+            const keywords = /\b(class|id|href|style|src|type|const|let|var|function|return|if|else|for|while|import|export)\b/g;
+            escaped = escaped.replace(keywords, '<span class="cm-syntax-keyword">$&</span>');
+
+            // 4. تلوين المعاملات الرياضية والمنطقية (= , + , - , * , /)
+            escaped = escaped.replace(/([=+\-*/])/g, '<span class="cm-syntax-operator">$1</span>');
+
+            // 5. تلوين الأقواس بجميع أنواعها
             escaped = escaped.replace(/(\{)/g, '<span class="cm-syntax-brace">$1</span>')
-                             .replace(/(\})/g, '<span class="cm-syntax-brace">$1</span>');
-
-            // تلوين الأقواس المربعة []
-            escaped = escaped.replace(/(\[)/g, '<span class="cm-syntax-bracket">$1</span>')
-                             .replace(/(\])/g, '<span class="cm-syntax-bracket">$1</span>');
-
-            // تلوين الأقواس الدائرية ()
-            escaped = escaped.replace(/(\()/g, '<span class="cm-syntax-paren">$1</span>')
+                             .replace(/(\})/g, '<span class="cm-syntax-brace">$1</span>')
+                             .replace(/(\[)/g, '<span class="cm-syntax-bracket">$1</span>')
+                             .replace(/(\])/g, '<span class="cm-syntax-bracket">$1</span>')
+                             .replace(/(\()/g, '<span class="cm-syntax-paren">$1</span>')
                              .replace(/(\))/g, '<span class="cm-syntax-paren">$1</span>');
+
+            // 6. تلوين علامات الـ HTML والأقواس الزاوية للوسوم (&lt; و &gt;)
+            escaped = escaped.replace(/(&lt;\/?[a-zA-Z0-9!:-]+)/g, '<span class="cm-syntax-tag">$1</span>')
+                             .replace(/(&gt;)/g, '<span class="cm-syntax-tag">$1</span>');
 
             return escaped;
         };
 
-        // دالة تحديث الـ Preview (Iframe) بناءً على القيم الحالية للأكواد
         const updatePreview = () => {
             const finalCode = `
 <!DOCTYPE html>
@@ -103,25 +102,21 @@ class CodeMagic extends HTMLElement {
 <style>${this.codes.css}</style>
 </head>
 <body>
-
 ${this.codes.html}
-
 <script>
 ${this.codes.js}
 <\/script>
-
 </body>
 </html>
 `;
             this.iframe.srcdoc = finalCode;
         };
 
-        // دالة لإدخال النص البرمجي في الصندوق مع الحفاظ على موضع مؤشر الكتابة
+        // دالة ذكية لإرجاع المؤشر لنفس مكانه النصي الأصلي بدقة بعد إعادة رندرة الـ HTML
         const setCodeWithHighlight = (text) => {
             const selection = window.getSelection();
             let offset = 0;
-            
-            // حساب مكان المؤشر الحالي قبل التعديل
+
             if (selection.rangeCount > 0) {
                 const range = selection.getRangeAt(0);
                 const preCaretRange = range.cloneRange();
@@ -130,10 +125,10 @@ ${this.codes.js}
                 offset = preCaretRange.toString().length;
             }
 
-            // تطبيق التلوين
-            codeBox.innerHTML = highlightCode(text);
+            // معالجة مشكلة السطر الأخير الفارغ في المتصفحات
+            const targetText = text.endsWith('\n') ? text + ' ' : text;
+            codeBox.innerHTML = highlightCode(targetText);
 
-            // إعادة تعيين موضع المؤشر بدقة بعد إعادة بناء الـ HTML الداخلي
             if (offset > 0) {
                 const restoreCaret = (el, offset) => {
                     let currentOffset = 0;
@@ -163,7 +158,6 @@ ${this.codes.js}
             }
         };
 
-        // إنشاء التبويبات (الأزرار) تلقائياً
         available.forEach((lang, index) => {
             const btn = document.createElement("button");
             btn.className = "cm-tab" + (index === 0 ? " active" : "");
@@ -176,30 +170,44 @@ ${this.codes.js}
                 this.querySelectorAll(".cm-tab").forEach(x => x.classList.remove("active"));
                 btn.classList.add("active");
                 this.currentLang = lang;
-                
-                // عرض الكود الخاص بالتبويب الحالي مع تلوينه
                 setCodeWithHighlight(this.codes[lang]);
             };
         });
 
-        // الاستماع لحدث الكتابة والتعديل الفوري داخل الديف
         codeBox.addEventListener("input", () => {
-            const text = codeBox.innerText; // جلب النص النقي بدون وسوم التلوين المضافة
-            this.codes[this.currentLang] = text; // تحديث مخزن الأكواد للغة النشطة حالياً
+            // استخدام innerText يضمن جلب النصوص مع النزول لسطر جديد بشكل نقي وصحيح
+            let text = codeBox.innerText;
             
-            setCodeWithHighlight(text); // إعادة تلوين الكود الحالي
-            updatePreview(); // تحديث العرض المباشر فوراً
+            // إصلاح توافق المتصفحات عند تفريغ الصندوق تماماً
+            if (text === '\n') text = '';
+
+            this.codes[this.currentLang] = text;
+            setCodeWithHighlight(text);
+            updatePreview();
         });
 
-        // التعامل مع زر الـ Enter لإضافة سطر جديد برمجياً منعا للمشاكل ببعض المتصفحات
+        // إصلاح مشكلة ضغط الـ Enter ومنع المتصفح من إفساد الهيكل البرمجي بالـ div
         codeBox.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
-                document.execCommand("insertLineBreak", false, null);
                 e.preventDefault();
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    // إدراج محرف سطر جديد نقي ومباشر
+                    const textNode = document.createTextNode("\n");
+                    range.deleteContents();
+                    range.insertNode(textNode);
+                    range.setStartAfter(textNode);
+                    range.setEndAfter(textNode);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    
+                    // إطلاق حدث التحديث يدوياً ليتم إعادة التلوين فوراً بناء على المحرف الجديد
+                    codeBox.dispatchEvent(new Event("input"));
+                }
             }
         });
 
-        // عرض أول لغة وتحديث العرض لأول مرة تلقائياً
         if (this.codes[this.currentLang]) {
             setCodeWithHighlight(this.codes[this.currentLang]);
         }
@@ -209,7 +217,6 @@ ${this.codes.js}
 
 customElements.define("code-magic", CodeMagic);
 
-// CSS المحسن والمضاف إليه ستايلات التلوين البرمجي
 const style = document.createElement("style");
 
 style.textContent = `
@@ -221,17 +228,16 @@ margin:20px 0;
 .cm-wrapper{
 width: 900px;
 max-width: 100%;
-border:1px solid #ddd;
+border:1px solid #333;
 border-radius:12px;
-/*overflow:hidden;*/
 font-family:Arial;
-background: #fafafa;
+background: #1e1e1e; /* تحويل الثيم بالكامل لثيم داكن احترافي يناسب المطورين */
 }
 
 .cm-tabs{
 display: flex;
-background: #fafafa;
-border-bottom: 1px solid #0000;
+background: #252526;
+border-bottom: 1px solid #2d2d2d;
 height: 36px;
 overflow: hidden;
 border-radius: 12px 12px 0px 0px;
@@ -243,18 +249,20 @@ padding: 10px 0;
 cursor: pointer;
 background: none;
 width: 100px;
+color: #858585;
 }
 
 .cm-tab.active{
-background: #ffffff;
+background: #1e1e1e;
 font-weight: bold;
-box-shadow: 0px -3px 0px #3b91e1 inset;
+color: #fff;
+box-shadow: 0px -3px 0px #007acc inset;
 }
 
 .cm-body{
 display: flex;
 height: 500px;
-background: #fafafa;
+background: #1e1e1e;
 border-radius: 10px
 }
 .cm-body div {
@@ -266,16 +274,20 @@ border-radius: 10px
 padding: 15px;
 overflow: auto;
 white-space: pre-wrap;
-color: #5e656b;
-font-family: monospace;
+color: #d4d4d4;
+font-family: 'Courier New', Courier, monospace;
 outline: none;
-direction: ltr; /* لضمان كتابة الكود البرمجي من اليسار لليمين بشكل سليم */
+direction: ltr;
 text-align: left;
+width: 50%;
 }
 
-/* ستايلات تلوين الأكواد المخصصة */
-.cm-syntax-tag { color: #569cd6; font-weight: bold; }       /* الوسوم الكودية < > */
-.cm-syntax-brace { color: #ffd700; font-weight: bold; }     /* الأقواس الحاصرة { } */
+/* فئات وألوان التلوين البرمجي الإضافية والجديدة */
+.cm-syntax-tag { color: #569cd6; font-weight: bold; }       /* الوسوم الكودية وأقواسها مثل < > */
+.cm-syntax-keyword { color: #c586c0; font-weight: bold; }   /* الكلمات الدلالية مثل id, class, href */
+.cm-syntax-operator { color: #d4d4d4; font-weight: bold; }  /* المعاملات مثل = , + , - */
+.cm-syntax-string { color: #ce9178; }                       /* النصوص داخل الاقتباسات "strings" */
+.cm-syntax-brace { color: #ffd700; font-weight: bold; }     /* الأقواس { } */
 .cm-syntax-bracket { color: #da70d6; font-weight: bold; }   /* الأقواس المربعة [ ] */
 .cm-syntax-paren { color: #17a2b8; font-weight: bold; }     /* الأقواس الدائرية ( ) */
 
@@ -285,7 +297,7 @@ margin-left: 0;
 font-family: monospace;
 border-radius: 10px;
 background: white;
-box-shadow: 0 0 0 1px #dddddd;
+box-shadow: 0 0 0 1px #2d2d2d;
 width: 50%;
 }
 
@@ -294,6 +306,7 @@ width:100%;
 height:100%;
 border:none;
 border-radius: 10px;
+background: #ffffff;
 }
 `;
 
