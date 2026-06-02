@@ -306,6 +306,8 @@ border-radius: 10px
 }
 
 .cm-code{
+font-size: 14px;
+line-height: 1.5;
 padding: 15px;
 padding-right: 0px;
 overflow: scroll;
