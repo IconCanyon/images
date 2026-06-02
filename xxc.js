@@ -317,15 +317,15 @@ text-align: left;
 tab-size: 4;
 }
 
-.cm-syntax-tag { color: #2f7ed8; font-weight: 700; }
-.cm-syntax-tag-name { color: #0f8f78; font-weight: 700; }
+.cm-syntax-tag { color: #3f454da1; font-weight: 700; }
+.cm-syntax-tag-name { color: #b85e8e; font-weight: 700; }
 .cm-syntax-attr { color: #8a5cf6; }
-.cm-syntax-attr-important { color: #d97706; font-weight: 700; }
-.cm-syntax-string { color: #15803d; }
+.cm-syntax-attr-important { color: #d99559; font-weight: 700; }
+.cm-syntax-string { color: #426db6; }
 .cm-syntax-keyword { color: #b91c1c; font-weight: 700; }
 .cm-syntax-number { color: #0e7490; }
 .cm-syntax-comment { color: #7c8794; font-style: italic; }
-.cm-syntax-operator { color: #db2777; font-weight: 700; }
+.cm-syntax-operator { color: #656f79; font-weight: 700; }
 .cm-syntax-brace { color: #ca8a04; font-weight: 700; }
 .cm-syntax-bracket { color: #9333ea; font-weight: 700; }
 .cm-syntax-paren { color: #0891b2; font-weight: 700; }
