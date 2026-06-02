@@ -230,7 +230,7 @@ font-family:Arial;
 .cm-tabs{
 display: flex;
 background: #fafafa;
-border-bottom: 1px solid #dddddd;
+border-bottom: 1px solid #0000;
 height: 36px;
 }
 
@@ -261,7 +261,7 @@ flex: 1 1;
 padding: 15px;
 overflow: auto;
 white-space: pre-wrap;
-color: #d4d4d4;
+color: #5e656b;
 font-family: monospace;
 outline: none;
 direction: ltr; /* لضمان كتابة الكود البرمجي من اليسار لليمين بشكل سليم */
