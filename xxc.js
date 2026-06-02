@@ -287,7 +287,11 @@ fill: #677485d6;
 background: #0000;
 }
 .ccvvde3r4 button:hover {
+fill: #626f80;
 background: #6774850e;
+}
+.ccvvde3r4 button:active {
+background: #67748521;
 }
 
 .cm-wrapper{
