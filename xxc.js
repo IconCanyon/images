@@ -261,7 +261,6 @@ flex: 1 1;
 padding: 15px;
 overflow: auto;
 white-space: pre-wrap;
-background: #1e1e1e; /* تحويل الخلفية إلى داكنة لتناسب التلوين البرمجي بشكل احترافي */
 color: #d4d4d4;
 font-family: monospace;
 outline: none;
