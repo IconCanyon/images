@@ -854,6 +854,7 @@ border-radius: 12px 12px 0px 0px;
 
 .cm-tab{
 position: relative;
+height: 34px;
 transition: 0.2s;
 font-family: system-ui;
 line-height: 0;
