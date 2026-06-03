@@ -1,1040 +1,1202 @@
-(function () {
-
-const DATA = {};
-
-window.CodeMagic = {
-    save(obj) {
-        Object.assign(DATA, obj);
-        document.querySelectorAll("code-magic").forEach(el => {
-            if (el.renderCodeMagic) el.renderCodeMagic();
-        });
-    }
-};
-
-class CodeMagic extends HTMLElement {
-
-    connectedCallback() {
-        this.renderCodeMagic = () => this.render();
-        this.render();
-    }
-
-    async render() {
-
-        const id = this.getAttribute("com");
-        const item = DATA[id];
-
-        if (!item) {
-            this.innerHTML = "لا توجد بيانات";
-            return;
-        }
-
-        const allLangs = ["html", "css", "js"];
-        const showOnlyExistingFiles = String(item.com || "").trim().toLowerCase() === "off";
-        const hasConfiguredFiles = allLangs.some(k => Boolean(String(item[k] || "").trim()));
-
-        if (showOnlyExistingFiles && !hasConfiguredFiles) {
-            this.remove();
-            return;
-        }
-
-        const [htmlCode, cssCode, jsCode] = await Promise.all([
-            item.html ? fetch(item.html).then(r => r.text()).catch(() => "") : "",
-            item.css ? fetch(item.css).then(r => r.text()).catch(() => "") : "",
-            item.js ? fetch(item.js).then(r => r.text()).catch(() => "") : ""
-        ]);
-
-        this.codes = {
-            html: htmlCode,
-            css: cssCode,
-            js: jsCode
-        };
-
-        const available = showOnlyExistingFiles
-            ? allLangs.filter(k => Boolean(String(item[k] || "").trim()))
-            : allLangs;
-        this.currentLang = available[0] || "html";
-
-        const zoomOpenIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="800px" height="800px" viewBox="0 0 48 48" style="&#10;    width: 24px;&#10;    height: 24px;&#10;"> <g id="Layer_2" data-name="Layer 2"> <g id="invisible_box" data-name="invisible box"> <rect width="48" height="48" fill="none"/> </g> <g id="icons_Q2" data-name="icons Q2"> <g> <path d="M18.6,26.6,8,37.2V30.1A2.1,2.1,0,0,0,6.3,28,2,2,0,0,0,4,30V42a2,2,0,0,0,2,2H17.9A2.1,2.1,0,0,0,20,42.3,2,2,0,0,0,18,40H10.8L21.3,29.5a2.1,2.1,0,0,0,.3-2.7A1.9,1.9,0,0,0,18.6,26.6Z"/> <path d="M30,4a2,2,0,0,0-2,2.3A2.1,2.1,0,0,0,30.1,8h7.1L26.7,18.5a2,2,0,0,0-.2,2.8A1.8,1.8,0,0,0,28,22a2,2,0,0,0,1.4-.6L40,10.8v7.1A2.1,2.1,0,0,0,41.7,20,2,2,0,0,0,44,18V6a2,2,0,0,0-2-2Z"/> </g> </g> </g> </svg>`;
-        const zoomCloseIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="800px" height="800px" viewBox="0 0 48 48" style="&#10;    width: 24px;&#10;    height: 24px;&#10;">
-  <g id="Layer_2" data-name="Layer 2">
-    <g id="invisible_box" data-name="invisible box">
-      <rect width="48" height="48" fill="none"/>
-    </g>
-    <g id="icons_Q2" data-name="icons Q2">
-      <g>
-        <path d="M8,26a2,2,0,0,0-2,2.3A2.1,2.1,0,0,0,8.1,30h7.1L4.7,40.5a2,2,0,0,0-.2,2.8A1.8,1.8,0,0,0,6,44a2,2,0,0,0,1.4-.6L18,32.8v7.1A2.1,2.1,0,0,0,19.7,42,2,2,0,0,0,22,40V28a2,2,0,0,0-2-2Z"/>
-        <path d="M43.7,4.8a2,2,0,0,0-3.1-.2L30,15.2V8.1A2.1,2.1,0,0,0,28.3,6,2,2,0,0,0,26,8V20a2,2,0,0,0,2,2H39.9A2.1,2.1,0,0,0,42,20.3,2,2,0,0,0,40,18H32.8L43.4,7.5A2.3,2.3,0,0,0,43.7,4.8Z"/>
-      </g>
-    </g>
-  </g>
-</svg>`;
-
-        this.innerHTML = `
-        <div class="cm-wrapper">
-            <div class="ccvvde3r4">
-                <button id="download-234">
-                    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" height="800px" width="800px" version="1.1" id="Capa_1" viewBox="0 0 384.97 384.97" xml:space="preserve" style="&#10;    width: 24px;&#10;    height: 24px;&#10;"> <g> <g id="Arrow_Down_Circle"> <path d="M192.485,0C86.185,0,0,86.173,0,192.485c0,106.3,86.185,192.485,192.485,192.485    c106.312,0,192.485-86.185,192.485-192.485C384.97,86.173,298.797,0,192.485,0z M192.485,360.909    c-93.018,0-168.424-75.406-168.424-168.424S99.467,24.061,192.485,24.061s168.424,75.406,168.424,168.424    S285.503,360.909,192.485,360.909z"/> <path d="M268.095,209.243l-63.46,62.558V84.212c0-6.641-5.438-12.03-12.151-12.03c-6.713,0-12.151,5.39-12.151,12.03v187.589    l-63.46-62.558c-4.74-4.692-12.439-4.692-17.179,0c-4.74,4.704-4.74,12.319,0,17.011l84.2,82.997    c2.25,2.25,5.414,3.537,8.59,3.537c3.164,0,6.328-1.299,8.59-3.525l84.2-82.997c4.752-4.704,4.74-12.319,0-17.011    C280.535,204.551,272.835,204.551,268.095,209.243z"/> </g> <g> </g> <g> </g> <g> </g> <g> </g> <g> </g> <g> </g> </g> </svg>
-                </button>
-                <button id="zoome-234">
-                    ${zoomOpenIcon}
-                </button>
-            </div>
-            <div class="cm-tabs"></div>
-
-            <div class="cm-body">
-
-                <div class="cm-editor">
-                    <div class="cm-line-numbers"></div>
-                    <div class="cm-code" contenteditable="true" spellcheck="false"></div>
-                </div>
-
-                <div class="cm-preview">
-                    <iframe></iframe>
-                </div>
-
-            </div>
-
-        </div>
-        `;
-
-        const tabsContainer = this.querySelector(".cm-tabs");
-        const lineNumbers = this.querySelector(".cm-line-numbers");
-        const codeBox = this.querySelector(".cm-code");
-        const wrapper = this.querySelector(".cm-wrapper");
-        const zoomButton = this.querySelector("#zoome-234");
-        const downloadButton = this.querySelector("#download-234");
-        this.iframe = this.querySelector("iframe");
-
-        const escapeHtml = (value) => value
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
-
-        const preserveHtmlEntities = (value, callback) => {
-            const entities = [];
-            const protectedValue = value.replace(/&(amp|lt|gt);/g, (entity) => {
-                const token = `\uE000${entities.length}\uE001`;
-                entities.push(entity);
-                return token;
-            });
-
-            return protectedValue
-                .split(/(\uE000\d+\uE001)/g)
-                .map(part => /^\uE000\d+\uE001$/.test(part) ? part : callback(part))
-                .join("")
-                .replace(/\uE000(\d+)\uE001/g, (_, index) => entities[index]);
-        };
-
-        const highlightPlain = (text) => preserveHtmlEntities(text, protectedText => protectedText.replace(
-            /(\/\*[\s\S]*?\*\/|\/\/.*)|("[^"]*"|'[^']*'|`[^`]*`)|\b(const|let|var|function|return|if|else|for|while|class|new|async|await|import|export|from|this|document|window|display|color|background|border|padding|margin|width|height|font|position|flex|grid)\b|\b([0-9]+(?:\.[0-9]+)?(?:px|rem|em|%|vh|vw|s|ms)?)\b|([{}])|([\[\]])|([()])|([=+\-*\/%<>!?:|&.,;])/g,
-            (match, comment, string, keyword, number, brace, bracket, paren, operator) => {
-                if (comment) return `<span class="cm-syntax-comment">${comment}</span>`;
-                if (string) return `<span class="cm-syntax-string">${string}</span>`;
-                if (keyword) return `<span class="cm-syntax-keyword">${keyword}</span>`;
-                if (number) return `<span class="cm-syntax-number">${number}</span>`;
-                if (brace) return `<span class="cm-syntax-brace">${brace}</span>`;
-                if (bracket) return `<span class="cm-syntax-bracket">${bracket}</span>`;
-                if (paren) return `<span class="cm-syntax-paren">${paren}</span>`;
-                if (operator) return `<span class="cm-syntax-operator">${operator}</span>`;
-                return match;
-            }
-        ));
-
-        const highlightHtmlTag = (tag) => {
-            const commentMatch = tag.match(/^(&lt;!--)([\s\S]*?)(--&gt;)$/);
-            if (commentMatch) {
-                return `<span class="cm-syntax-comment">${commentMatch[1]}${commentMatch[2]}${commentMatch[3]}</span>`;
-            }
-
-            return tag.replace(
-                /^(&lt;\/?)([a-zA-Z][\w:-]*|![A-Z]+)?([\s\S]*?)(&gt;)$/,
-                (_, open, name = "", attrs = "", close) => {
-                    const coloredAttrs = attrs.replace(
-                        /([\w:-]+)(\s*=\s*)("[^"]*"|'[^']*'|[^\s"'=&gt;]+)/g,
-                        (attrText, attrName, eq, attrValue) => {
-                            const attrClass = /^(id|class|href|src|alt|title|name|type|rel|aria-[\w-]+|data-[\w-]+)$/i.test(attrName)
-                                ? "cm-syntax-attr-important"
-                                : "cm-syntax-attr";
-
-                            return `<span class="${attrClass}">${attrName}</span><span class="cm-syntax-operator">${eq}</span><span class="cm-syntax-string">${attrValue}</span>`;
-                        }
-                    );
-
-                    return `<span class="cm-syntax-tag">${open}</span><span class="cm-syntax-tag-name">${name}</span>${coloredAttrs}<span class="cm-syntax-tag">${close}</span>`;
-                }
-            );
-        };
-
-        const colorToHex = (color) => {
-            const probe = document.createElement("span");
-            probe.style.color = "";
-            probe.style.color = color;
-            document.body.appendChild(probe);
-            const computedColor = getComputedStyle(probe).color;
-            probe.remove();
-
-            const rgbMatch = computedColor.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-            if (!rgbMatch) return "";
-
-            return "#" + rgbMatch.slice(1, 4)
-                .map(value => Number(value).toString(16).padStart(2, "0"))
-                .join("");
-        };
-
-        const highlightCssCode = (text, baseOffset = 0) => {
-            const colorPattern = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-fA-F])|\b(?:rgb|rgba|hsl|hsla)\(\s*[^)]*?\)/g;
-            let highlighted = "";
-            let lastIndex = 0;
-            let match;
-
-            while ((match = colorPattern.exec(text))) {
-                const colorValue = match[0];
-                const colorHex = colorToHex(colorValue);
-
-                if (!colorHex) continue;
-
-                const start = match.index;
-                const end = start + colorValue.length;
-
-                highlighted += highlightPlain(escapeHtml(text.slice(lastIndex, start)));
-                highlighted += `<span class="cm-color-swatch" contenteditable="false" data-color-start="${baseOffset + start}" data-color-end="${baseOffset + end}" data-color-value="${escapeHtml(colorValue)}" style="background:${colorHex}"></span>`;
-                highlighted += `<span class="cm-syntax-color">${escapeHtml(colorValue)}</span>`;
-                lastIndex = end;
-            }
-
-            highlighted += highlightPlain(escapeHtml(text.slice(lastIndex)));
-            return highlighted;
-        };
-
-        const highlightCode = (text, baseOffset = 0) => {
-            if (!text) return "";
-
-            const escaped = escapeHtml(text);
-
-            if (this.currentLang === "html") {
-                return escaped
-                    .split(/(&lt;!--[\s\S]*?--&gt;|&lt;\/?[a-zA-Z!][\s\S]*?&gt;)/g)
-                    .map(part => part.startsWith("&lt;") ? highlightHtmlTag(part) : highlightPlain(part))
-                    .join("");
-            }
-
-            if (this.currentLang === "css") {
-                return highlightCssCode(text, baseOffset);
-            }
-
-            return highlightPlain(escaped);
-        };
-
-        const updatePreview = () => {
-            const finalCode = `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<style>${this.codes.css}</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أوقات الصلاة</title>
+    <link rel="icon" href="image/mosque.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css" />
+    <link rel="manifest" href="/manifest.json">
+</head>
+<body>
+    <style>
+    * {
+        -webkit-tap-highlight-color: transparent;
+    }
+    body {
+        align-items: flex-start;
+        display: flex;
+        overflow: hidden;
+        font-size: 14px;
+        width: 100%;
+        height: 100dvh;
+        background-color: #00000000;
+        margin: 0;
+    }
+    #myDivas {
+        align-items: flex-end;
+        display: flex;
+        position: relative;
+        height: 100%;
+        width: 100%;
+        max-width: 100%;
+        padding: 0;
+        background-color: #00000000;
+    }
+    button {
+        cursor: pointer;
+        font-family: system-ui;
+    }
+    button, input, div, textarea, a, select, span {
+        outline-color: #1e79f0;
+        -webkit-tap-highlight-color: transparent !important;
+    }
+
+    gol {
+        height: 1px;
+        background-color: #f6f7f9;
+        width: -webkit-fill-available;
+        display: block;
+    }
+    .prayer-timesa gol {
+        background-color: #ebedf1;
+        margin: 6px 0;
+    }
+    .prayer-container {
+          font-family: "Tajawal", sans-serif;
+        /* font-family: system-ui; */
+        direction: rtl;
+        text-align: center;
+        overflow-y: auto;
+    }
+    .omg {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 20px;
+        position: absolute;
+        bottom: 8px;
+    }
+    .location-picker-button {
+        cursor: pointer;
+        border: none;
+        min-width: 150px;
+        max-width: 45%;
+        height: 36px;
+        padding: 0 16px;
+        color: #677483;
+        background-color: #f6f7f9;
+        border-radius: 8px;
+        font-family: "Tajawal", sans-serif;
+        font-size: 15px;
+        line-height: 2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        transition: ease 0.2s;
+    }
+    .location-picker-button:active { background-color: #e8eaec; }
+    .location-picker-button:disabled {
+        cursor: default;
+        opacity: .5;
+    }
+    .location-picker-layer {
+position: fixed;
+    inset: 0;
+    left: 0;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, .35);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity .45s ease, visibility .45s ease;
+    }
+    .location-picker-layer.show {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+    .location-picker-panel {
+        width: min(720px, 100%);
+        height: 80dvh;
+        box-sizing: border-box;
+        margin: 0 14px;
+        padding: 14px;
+        background-color: #ffffff;
+        border-radius: 14px;
+        box-shadow: 0 -8px 24px #00000026;
+        transform: translateY(28px);
+        opacity: 0;
+        transition: transform .45s ease, opacity .45s ease;
+        display: none;
+        flex-direction: column;
+        font-family: "Tajawal", sans-serif;
+    }
+    .location-picker-layer.show .location-picker-panel.active {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    .location-picker-panel.active { display: flex; }
+    .location-picker-header {
+            display: flex;
+    align-items: center;
+    justify-content: right;
+    gap: 12px;
+    margin-bottom: 10px;
+    height: 36px;
+    list-style: 0;
+    }
+    .flex {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .location-picker-title {
+        color: #677483;
+        font-size: 17px;
+        font-weight: 600;
+    }
+    .location-picker-close {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    color: #677483;
+    background-color: #0000;
+    font-size: 38px;
+    font-family: emoji;
+    line-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 400;
+    }
+    .location-picker-close:active {
+        background-color: #f6f7f9;
+    }
+    .location-picker-search {
+        box-sizing: border-box;
+        direction: rtl;
+        width: 100%;
+        height: 42px;
+        margin-bottom: 10px;
+        border: none;
+        border-radius: 10px;
+        padding: 0 13px;
+        text-align: right;
+        color: #677483;
+        background-color: #f6f7f9;
+        font-family: "Tajawal", sans-serif;
+        font-size: 15px;
+    }
+    .location-picker-list {
+        flex: 1;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        padding-bottom: 6px;
+    }
+    .location-picker-list::-webkit-scrollbar { width: 5px; }
+    .location-picker-list::-webkit-scrollbar-thumb { background: #b8b8b85d; border-radius: 10px; }
+    .location-picker-option {
+        width: 100%;
+        min-height: 42px;
+        margin: 3px 0;
+        border: none;
+        border-radius: 10px;
+        padding: 8px 12px;
+        text-align: right;
+        color: #677483;
+        background-color: transparent;
+        font-family: "Tajawal", sans-serif;
+        font-size: 16px;
+    }
+    .location-picker-option:active,
+    .location-picker-option.selected {
+        color: #9c7d22;
+        background-color: #faf2d7;
+    }
+    .location-picker-empty {
+        padding: 20px 0;
+        color: #9aa3ad;
+        text-align: center;
+        font-family: "Tajawal", sans-serif;
+    }
+    .prayer-times-container {
+        margin-top: 54px;
+    }
+    .prayer-countdown-timer {
+    font-size: 2.7em;
+    margin-top: 10px;
+    color: #ff0000;
+    margin-bottom: 5px;
+}
+    .prayer-times-table {
+border-collapse: collapse;
+    margin: 20px 10px;
+    margin-top: 10px;
+    width: -webkit-fill-available;
+    font-size: 18px;
+    }
+    .next-prayer-time-display {
+        font-size: 16px;
+    }
+    .prayer-times-header, .prayer-times-data {
+        padding: 10px;
+        border-top: 1px solid #dadada;
+        border-bottom: 1px solid #dadada;
+        text-align: center;
+    }
+    .highlighted-next-prayer {
+        font-weight: 500;
+        background-color: #faf2d7;
+        color: #d1b75c;
+        position: relative;
+        z-index: 5;
+        /* box-shadow: 1px -1px 0px #d1b75c,-1px 0px 0px #d1b75c; */
+    }
+    /* .highlighted-next-prayer td {
+        border-top: 1px solid #d1b75c;
+        border-bottom: 1px solid #d1b75c;
+    } */
+    .dropdown-selector::-webkit-scrollbar { width: 5px; }
+    .dropdown-selector::-webkit-scrollbar-thumb { background: #b8b8b85d; border-radius: 10px; }
+    .dropdown-selector::-webkit-scrollbar-track { background: #f1f1f100; border-radius: 10px; }
+    .generic-button {
+        padding: 10px 20px;
+        margin: 10px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    .generic-button:hover { background-color: #45a049; }
+    .adhan-alert-container {
+        display: none;
+        position: fixed;
+        top: 20%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: #ffdddd;
+        padding: 20px;
+        border: 2px solid #f00;
+        border-radius: 10px;
+        z-index: 1000;
+    }
+    .c-sec {
+        scrollbar-width: none;
+        transition: ease 0.2s;
+        padding: 10px;
+        height: 60px;
+        width: 278px;
+        resize: none;
+        border: solid 1px;
+        border-radius: 7px;
+        margin-bottom: 20px;
+        margin-top: 10px;
+        user-select: text !important;
+    }
+    .c-sec:focus {
+        box-shadow: 0 0 0 5px #dfecff;
+        border: solid 1px #1e6ee3;
+    }
+
+    img {
+        user-select: none;
+        -webkit-user-drag: none;
+    }
+    .Prayer-times {
+    position: relative;
+    font-family: system-ui;
+    animation: show-buttons 0.3s;
+    padding: 0 10px;
+    background-color: #ffffffd6;
+    backdrop-filter: blur(21px);
+    border-radius: 0;
+    width: 900px;
+    margin: auto;
+    height: 100%;
+    max-width: -webkit-fill-available;
+    box-shadow: none;
+    }
+    .Prayer-image {
+        z-index: 110;
+        position: absolute;
+        margin: auto;
+        top: -50px;
+        padding: 8px;
+        background-color: white;
+        border-radius: 50%;
+        transform: translate(-50%);
+        left: 50%;
+        overflow: hidden;
+        display: none;
+        box-shadow: 0 0px 5px 0px rgba(60, 64, 67, .15);
+    }
+    .Prayer-image img {
+        height: 77px;
+        border-radius: 50%;
+        border: solid 1px #cccccc33;
+        display: block;
+    }
+    .prayer-timesa {
+        margin-top: 50px;
+        height: -webkit-fill-available;
+    }
+    .times-button {
+        position: absolute;
+        top: 0;
+        right: 0;
+        margin: 10px;
+        border-radius: 50%;
+        height: 36px;
+        width: 36px;
+        border: none;
+        color: #677483;
+        background-color: #f6f7f9;
+    }
+    .times-button:active { background-color: #e8eaec; }
+    .times-button span { font-size: 23px; }
+    .times-button:disabled {
+        opacity: .5;
+    }
+    .prayer-menu {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        z-index: 3;
+        box-shadow: 0px 18px 8px #fff;
+    }
+    .prayer-menu button {
+        transition: ease 0.2s;
+    border: none;
+    margin: 0 5px;
+    border-radius: 20px;
+    height: 33px;
+    padding: 0 13px;
+    color: #d1b75c;
+    background: #faf2d7;
+    font-family: "Tajawal", sans-serif;
+    line-height: 2;
+    font-size: 15px;
+    }
+    .prayer-menu button:active { background: #f3e9ca; }
+    .prayer-menu button.active {
+        background-color: #e3c765;
+        color: white;
+    }
+    .prayer-div {
+        height: 92%;
+        overflow-y: hidden;
+        scrollbar-width: none;
+    }
+    .prayer-div-div {
+        position: relative;
+        text-align: center;
+        margin-bottom: 3px;
+        height: 100%;
+        overflow-y: auto;
+    }
+    .prayer-div-div .ss {
+    text-align: center;
+    user-select: none;
+    display: block;
+    margin: 13px 0;
+    font-size: 20px;
+    font-family: "Tajawal", sans-serif;
+    margin-top: 16px;
+    }
+    .good {
+    position: absolute;
+    width: max-content;
+    user-select: none;
+    color: #ccc;
+    bottom: 0;
+    left: 50%;
+    transform: translate(-50%);
+    padding: 16px 16px 10px 16px;
+    font-size: 16px;
+    font-family: "Tajawal", sans-serif;
+    }
+    .prayer-div-list {
+        font-family: system-ui;
+        color: #9c916a;
+        text-align: right;
+        font-size: 18px;
+        position: relative;
+        overflow: hidden;
+        padding: 10px 20px;
+        margin: 10px;
+        margin-top: 0;
+        border-radius: 12px;
+        box-shadow: 0px 1px 3px #0000000f;
+        line-height: 2;
+    }
+    .prayer-div-list::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 5px;
+        background-color: #faf2d7;
+    }
+    .prayer-div-list a {
+        font-weight: 600;
+        color: #d1b75c;
+    }
+    .prayer-div-div::-webkit-scrollbar { width: 3px; }
+    .prayer-div-div::-webkit-scrollbar:hover { width: 5px; }
+    .prayer-div-div::-webkit-scrollbar-thumb { background: #b8b8b85d; border-radius: 10px; }
+    .prayer-div-div:hover::-webkit-scrollbar-thumb { background: #c9c9c9; }
+
+    #iframe2 {
+        box-shadow: 0px 4px 0px #fff inset;
+        border-radius: 2px;
+        background: rgb(255, 255, 255);
+        border: none;
+        width: 100%;
+        overflow: hidden;
+        height: 445px;
+        position: relative;
+        z-index: 5;
+    }
+    #country, #city, #fetch-times {
+        cursor: pointer;
+        outline: none;
+        border: none;
+        padding: 5px;
+        color: #677483;
+        background-color: #f6f7f9;
+        margin: 4px;
+        border-radius: 8px;
+    }
+    #lolo {
+        box-shadow: 0px 1px 0px #f6f7f9;
+        padding-bottom: 3px;
+        padding-top: 4px;
+        justify-content: center;
+        flex-wrap: wrap;
+        display: flex;
+        position: sticky;
+        z-index: 5;
+        top: 0;
+        background: white;
+        text-align: -webkit-center;
+    }
+    #message {
+        position: absolute;
+        display: none;
+        margin: auto;
+        bottom: 72px;
+        z-index: 10;
+        padding: 8px 14px;
+        border-radius: 8px;
+        color: #677483;
+        background-color: #f6f7f9da;
+        box-shadow: 0px 1px 3px #00000017, 0px 1px 2px #cccccc44;
+        left: 50%;
+        transform: translate(-50%);
+    }
+    .goool {
+        user-select: none;
+        border-radius: 10px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 100;
+        background-color: #000000ab;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+    .goool-div {
+        text-shadow: 0px 1px 7px #000;
+        justify-content: center;
+        flex-wrap: wrap;
+        display: flex;
+        color: white;
+    }
+    .goool-div img { width: 181px; }
+    .goool-div2 {
+        width: -webkit-fill-available;
+        margin: 0px 40px;
+        margin-top: 160px;
+        text-align: center;
+    }
+    .goool-div2 button {
+        height: 54px;
+        width: 54px;
+        border: none;
+        border-radius: 50px;
+        background: #ff6262;
+        color: white;
+        box-shadow: 0px 2px 7px #00000056;
+    }
+
+    .ripple-btn {
+        position: relative;
+        overflow: hidden;
+        transition: ease 0.1s;
+    }
+    .ripple {
+        position: absolute;
+        border-radius: 50%;
+        background-color: #ffffff46;
+        transform: scale(0);
+        animation: ripple-animation 0.6s linear;
+    }
+    @keyframes ripple-animation {
+        to { transform: scale(4); opacity: 0; }
+    }
+    @media (max-width: 768px) {
+        body { user-select: none; }
+        button, a, select { user-select: none; }
+        .good {
+            padding: 16px 16px 0px 16px !important;
+        }
+    }
+    tbody td {
+
+    }
+    #section-3 .prayer-div-list {
+        cursor: pointer;
+        transition: ease 0.2s;
+        user-select: none;
+    }
+    #section-3 .prayer-div-list:active {
+        transform: scale(0.95);
+        opacity: .6;
+    }
+    .ccvve {
+        margin: 0 10px;
+        font-size: 18px;
+        color: #677483;
+        font-weight: 500;
+        display: none;
+    }
+    .kkoopd {
+        display: flex;
+        align-items: center;
+        width: max-content;
+        margin: auto;
+    }
+    .kkoopd button {
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 30px;
+        background: #f6f7f900;
+        color: #677483;
+        margin: 0 10px;
+    }
+    .kkoopd button:active{
+        opacity: .5;
+    }
+    .kkoopd xxe {
+        height: 24px;
+        background: #e2e2e2;
+        width: 1px;
+    }
+    </style>
 </head>
 <body>
 
-${this.codes.html}
+    <div id="myDivas">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.1/howler.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <div class="Prayer-times prayer-times-container" id="settingsDiv">
+            <button style="right: auto; left: 0;" class="material-symbols-outlined times-button" id="location_on" disabled><span>location_on</span></button>
+            <button onclick="scrollToDiv('section-4', this)" class="material-symbols-outlined times-button"><span>code</span></button>
+            <div class="Prayer-image cor"><img src="image/mosque.png" alt=""></div>
+            <div class="prayer-timesa">
+                <div class="prayer-menu container">
+                    <button onclick="scrollToDiv('section-3', this)">ادعيه</button>
+                    <button onclick="scrollToDiv('section-2', this)">الأذكار</button>
+                    <button onclick="scrollToDiv('section-1', this)">اوقات الصلاة</button>
+                </div>
+                <div class="prayer-div">
+                    <div id="section-1" class="prayer-div-div section">
+                        <div class="prayer-container">
+                            <div class="">
+                                <h2 class="selected-location-title" style="margin-top: 20px;" id="date">٠/٠/٠٠٠٠</h2>
+                                <div class="prayer-countdown-timer">٠٠:٠٠:٠٠</div>
+                                <div class="next-prayer-time-display">متبقي على الصلاة القادمة: <span class="next-prayer-time">--:--</span></div>
+                                <table class="prayer-times-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="border-top-color: #00000000;" class="prayer-times-header">الصلاة</th>
+                                            <th style="border-top-color: #00000000;" class="prayer-times-header">الوقت</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="prayer-times-body">
+                                        <tr class="fajr-prayer-row">
+                                            <td class="prayer-times-data">الفجر</td>
+                                            <td class="fajr-time prayer-times-data">--:--</td>
+                                        </tr>
+                                        <tr class="sunrise-prayer-row">
+                                            <td class="prayer-times-data">الشروق</td>
+                                            <td class="sunrise-time prayer-times-data">--:--</td>
+                                        </tr>
+                                        <tr class="dhuhr-prayer-row">
+                                            <td class="prayer-times-data">الظهر</td>
+                                            <td class="dhuhr-time prayer-times-data">--:--</td>
+                                        </tr>
+                                        <tr class="asr-prayer-row">
+                                            <td class="prayer-times-data">العصر</td>
+                                            <td class="asr-time prayer-times-data">--:--</td>
+                                        </tr>
+                                        <tr class="maghrib-prayer-row">
+                                            <td class="prayer-times-data">المغرب</td>
+                                            <td class="maghrib-time prayer-times-data">--:--</td>
+                                        </tr>
+                                        <tr class="isha-prayer-row">
+                                            <td style="border-bottom-color: #00000000;" class="prayer-times-data">العشاء</td>
+                                            <td style="border-bottom-color: #00000000;" class="isha-time prayer-times-data">--:--</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
 
-<script>
-${this.codes.js}
-<\/script>
+                            <div class="omg">
+                                <button type="button" class="location-picker-button country-picker-button" onclick="openLocationPicker('country')">اختر الدولة</button>
+                                <button type="button" class="location-picker-button city-picker-button" onclick="openLocationPicker('city')" disabled>اختر المدينة</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- اذكار -->
+                    <div class="prayer-div-div section" id="section-2">
+                        <span class="ss">اذكار الصباح</span>
+                        <div class="prayer-div-list">
+                            <a>أعوذ بالله من الشيطان الرجيم</a>
+                            <gol></gol>
+                            أَعُوذُ بِاللَّهِ مِنَ الشَّيطَانِ الرَّجِيمِ ﴿اللَّهُ لاَ إِلَهَ إِلاَّ هُوَ الْحَيُّ الْقَيُّومُ لاَ تَأْخُذُهُ سِنَةٌ وَلاَ نَوْمٌ لَّهُ مَا فِي السَّمَوَاتِ وَمَا فِي الأَرْضِ مَن ذَا الَّذِي يَشْفَعُ عِنْدَهُ إِلاَّ بِإِذْنِهِ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ وَلاَ يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلاَّ بِمَا شَاء وَسِعَ كُرْسِيُّهُ السَّمَوَاتِ وَالْأَرْضَ وَلاَ يَؤُودُهُ حِفْظُهُمَا وَهُوَ الْعَلِيُّ الْعَظِيمُ﴾.
+                            <gol></gol>
+                            <a>بسم الله الرحمن الرحيم</a>
+                            <gol></gol>
+                            بسم الله الرحمن الرحيم ﴿قُلْ هُوَ اللَّهُ أَحَدٌ* اللَّهُ الصَّمَدُ* لَمْ يَلِدْ وَلَمْ يُولَدْ* وَلَمْ يَكُن لَّهُ كُفُواً أَحَدٌ﴾. بسم الله الرحمن الرحيم ﴿قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ* مِن شَرِّ مَا خَلَقَ* وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ* وَمِن شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ* وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ﴾. بسم الله الرحمن الرحيم ﴿قُلْ أَعُوذُ بِرَبِّ النَّاسِ* مَلِكِ النَّاسِ* إِلَهِ النَّاسِ* مِن شَرِّ الْوَسْوَاسِ الْخَنَّاسِ* الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ* مِنَ الْجِنَّةِ وَ النَّاسِ﴾ (ثلاثَ مرَّاتٍ).
+                            <gol></gol>
+                            ((أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ ، وَالْحَمْدُ لِلَّهِ، لاَ إِلَهَ إلاَّ اللَّهُ وَحْدَهُ لاَ شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ، رَبِّ أَسْأَلُكَ خَيْرَ مَا فِي هَذَا الْيَوْمِ وَخَيرَ مَا بَعْدَهُ ، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا فِي هَذَا الْيَوْمِ وَشَرِّ مَا بَعْدَهُ، رَبِّ أَعُوذُ بِكَ مِنَ الْكَسَلِ وَسُوءِ الْكِبَرِ، رَبِّ أَعُوذُ بِكَ مِنْ عَذَابٍ فِي النَّارِ وَعَذَابٍ فِي الْقَبْرِ)). [ وإذا أمسى قال: أمسينا وأمسى الملك للَّه] [وإذا أمسى قال: رب أسألك خير ما في هذه الليلة، وخير ما بعدها، وأعوذ بك من شر ما في هذه الليلة، وشر ما بعدها.]
+                            <gol></gol>
+                            ((اللَّهُمَّ بِكَ أَصْبَحْنَا، وَبِكَ أَمْسَيْنَا ، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ وَإِلَيْكَ النُّشُورُ)). [وإذا أمسى قال: اللَّهم بك أمسينا، وبك أصبحنا، وبك نحيا، وبك نموت، وإليك المصير.]
+                            <gol></gol>
+                            ((اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَهَ إِلاَّ أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَى عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوءُ بِذَنْبِي فَاغْفِرْ لِي فَإِنَّهُ لاَ يَغْفِرُ الذُّنوبَ إِلاَّ أَنْتَ)).
+                            <gol></gol>
+                            ((اللَّهُمَّ إِنِّي أَصْبَحْتُ أُشْهِدُكَ، وَأُشْهِدُ حَمَلَةَ عَرْشِكَ، وَمَلاَئِكَتِكَ، وَجَمِيعَ خَلْقِكَ، أَنَّكَ أَنْتَ اللَّهُ لَا إِلَهَ إِلاَّ أَنْتَ وَحْدَكَ لاَ شَرِيكَ لَكَ، وَأَنَّ مُحَمَّداً عَبْدُكَ وَرَسُولُكَ)) (أربعَ مَرَّاتٍ).[ وإذا أمسى قال: اللَّهم إني أمسيت...]
+                            <gol></gol>
+                            ((اللَّهُمَّ مَا أَصْبَحَ بِي مِنْ نِعْمَةٍ أَوْ بِأَحَدٍ مِنْ خَلْقِكَ فَمِنْكَ وَحْدَكَ لاَ شَرِيكَ لَكَ، فَلَكَ الْحَمْدُ وَلَكَ الشُّكْرُ)). [وإذا أمسى قال: اللَّهم ما أمسى بي...]
+                            <gol></gol>
+                            ((اللَّهُمَّ عَافِنِي فِي بَدَنِي، اللَّهُمَّ عَافِنِي فِي سَمْعِي، اللَّهُمَّ عَافِنِي فِي بَصَرِي، لاَ إِلَهَ إِلاَّ أَنْتَ. اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْكُفْرِ، وَالفَقْرِ، وَأَعُوذُ بِكَ مِنْ عَذَابِ القَبْرِ، لاَ إِلَهَ إِلاَّ أَنْتَ)) (ثلاثَ مرَّاتٍ).
+                            <gol></gol>
+                            ((حَسْبِيَ اللَّهُ لاَ إِلَهَ إِلاَّ هُوَ عَلَيهِ تَوَكَّلتُ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ)) (سَبْعَ مَرّاتٍ).
+                            <gol></gol>
+                            ((اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالآخِرَةِ، اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ: فِي دِينِي وَدُنْيَايَ وَأَهْلِي، وَمَالِي، اللَّهُمَّ اسْتُرْ عَوْرَاتِي، وَآمِنْ رَوْعَاتِي، اللَّهُمَّ احْفَظْنِي مِنْ بَينِ يَدَيَّ، وَمِنْ خَلْفِي، وَعَنْ يَمِينِي، وَعَنْ شِمَالِي، وَمِنْ فَوْقِي، وَأَعُوذُ بِعَظَمَتِكَ أَنْ أُغْتَالَ مِنْ تَحْتِي)).
+                            <gol></gol>
+                            ((اللَّهُمَّ عَالِمَ الغَيْبِ وَالشَّهَادَةِ فَاطِرَ السَّمَوَاتِ وَالْأَرْضِ، رَبَّ كُلِّ شَيْءٍ وَمَلِيكَهُ، أَشْهَدُ أَنْ لاَ إِلَهَ إِلاَّ أَنْتَ، أَعُوذُ بِكَ مِنْ شَرِّ نَفْسِي، وَمِنْ شَرِّ الشَّيْطانِ وَشَرَكِهِ، وَأَنْ أَقْتَرِفَ عَلَى نَفْسِي سُوءاً، أَوْ أَجُرَّهُ إِلَى مُسْلِمٍ)).
+                            <gol></gol>
+                            ((بِسْمِ اللَّهِ الَّذِي لاَ يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلاَ فِي السّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ)) (ثلاثَ مرَّاتٍ).
+                            <gol></gol>
+                            ((رَضِيتُ بِاللَّهِ رَبَّاً، وَبِالْإِسْلاَمِ دِيناً، وَبِمُحَمَّدٍ صلى الله عليه وسلم نَبِيّاً)) (ثلاثَ مرَّاتٍ).
+                            <gol></gol>
+                            ((يَا حَيُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغيثُ أَصْلِحْ لِي شَأْنِيَ كُلَّهُ وَلاَ تَكِلْنِي إِلَى نَفْسِي طَرْفَةَ عَيْنٍ)).
+                            <gol></gol>
+                            ((أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ رَبِّ الْعَالَمِينَ، اللَّهُـمَّ إِنِّي أَسْأَلُكَ خَيْرَ هَذَا الْيَوْمِ:فَتْحَهُ، وَنَصْرَهُ، وَنورَهُ، وَبَرَكَتَهُ، وَهُدَاهُ، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا فِيهِ وَشَرِّ مَا بَعْدَهُ)). [وإذا أمسى قال: أمسينا وأمسى الملك للَّه ربّ العالمين اللَّهم إني أسألك خير هذه الليلة: فتحها، ونصرها، ونورها، وبركتها، وهداها، وأعوذ بك من شر ما فيها، وشر ما بعدها.]
+                            <gol></gol>
+                            ((أَصْبَحْنا عَلَى فِطْرَةِ الْإِسْلاَمِ، وَعَلَى كَلِمَةِ الْإِخْلاَصِ، وَعَلَى دِينِ نَبِيِّنَا مُحَمَّدٍ صلى الله عليه وسلم، وَعَلَى مِلَّةِ أَبِينَا إِبْرَاهِيمَ، حَنِيفاً مُسْلِماً وَمَا كَانَ مِنَ الْمُشرِكِينَ)). [وإذا أمسى قال: أمسينا على فطرة الإسلام...]
+                            <gol></gol>
+                            ((سُبْحَانَ اللَّهِ وَبِحَمْدِهِ)) (مائة مرَّةٍ).
+                            <gol></gol>
+                            ((لاَ إِلَهَ إِلاَّ اللَّهُ وَحْدَهُ لاَ شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ)) (عشرَ مرَّات) ، أَوْ (مرَّةً واحدةً عندَ الكَسَلِ).
+                            <gol></gol>
+                            ((لاَ إِلَهَ إِلاَّ اللَّهُ، وَحْدَهُ لاَ شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ)) (مائةَ مرَّةٍ إذا أصبحَ).
+                            <gol></gol>
+                            ((سُبْحَانَ اللَّهِ وَبِحَمْدِهِ: عَدَدَ خَلْقِهِ، وَرِضَا نَفْسِهِ، وَزِنَةَ عَرْشِهِ، وَمِدَادَ كَلِمَاتِهِ)) (ثلاثَ مرَّاتٍ إذا أصبحَ).
+                            <gol></gol>
+                            ((اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْماً نَافِعاً، وَرِزْقاً طَيِّباً، وَعَمَلاً مُتَقَبَّلاً)) (إذا أصبحَ).
+                            <gol></gol>
+                            ((أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ)) (مِائَةَ مَرَّةٍ فِي الْيَوْمِ).
+                            <gol></gol>
+                            ((أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ)) (ثلاثَ مرَّاتٍ إذا أمسى).
+                            <gol></gol>
+                            ((اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبَيِّنَا مُحَمَّدٍ)) (عشرَ مرَّاتٍ).
+                        </div>
+                        <span class="ss">اذكار بعد الصلاة</span>
+                        <div class="prayer-div-list">
+                            <a>الاستغفار ثلاث مرات</a>
+                            <gol></gol>
+                            "أستغفر الله، أستغفر الله، أستغفر الله"
+                            <gol></gol>
+                            <a>دعاء التوبة</a>
+                            <gol></gol>
+                            "اللهم أنت السلام ومنك السلام تباركت يا ذا الجلال والإكرام"
+                            <gol></gol>
+                            <a>آية الكرسي</a>
+                            <gol></gol>
+                            "اللَّهُ لا إِلٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ..." (البقرة: 255)
+                            <gol></gol>
+                            <a>التسبيح والتحميد والتكبير</a>
+                            <gol></gol>
+                            "سبحان الله" (33 مرة)
+                            "الحمد لله" (33 مرة)
+                            "الله أكبر" (33 مرة)
+                            <gol></gol>
+                            ثم يتمم المئة بقول: "لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير"
+                            <gol></gol>
+                            <a>دعاء شامل</a>
+                            <gol></gol>
+                            "اللهم لا مانع لما أعطيت ولا معطي لما منعت ولا ينفع ذا الجد منك الجد"
+                            <gol></gol>
+                            <a>دعاء لطلب المغفرة</a>
+                            <gol></gol>
+                            "اللهم أعني على ذكرك وشكرك وحسن عبادتك"
+                            <gol></gol>
+                            هذه الأذكار من السنن المستحبة بعد كل صلاة، ومن الأفضل المواظبة عليها لتنال الأجر والثواب
+                        </div>
+                    </div>
+
+                    <!-- ادعية -->
+                    <div id="section-3" class="prayer-div-div section">
+                        <span class="ss">ادعيه</span>
+                        <div class="prayer-div-list copyable" style="margin-top: 10px;">اللهم إني أسألك العفو والعافية في الدنيا والآخرة</div>
+                        <div class="prayer-div-list copyable">اللهم ارزقني رزقًا حلالًا طيبًا واسعًا مباركًا فيه</div>
+                        <div class="prayer-div-list copyable">اللهم اغفر لي ذنبي، ووسع لي في داري، وبارك لي في رزقي</div>
+                        <div class="prayer-div-list copyable">اللهم إني أعوذ بك من الهم والحزن، وأعوذ بك من العجز والكسل</div>
+                        <div class="prayer-div-list copyable">اللهم اجعلني من التوابين واجعلني من المتطهرين</div>
+                        <div class="prayer-div-list copyable">اللهم اهدني وسددني واجعلني سببًا لمن اهتدى</div>
+                        <div class="prayer-div-list copyable">اللهم إني أعوذ بك من جهد البلاء ودرك الشقاء وسوء القضاء</div>
+                        <div class="prayer-div-list copyable">اللهم إني أسألك من الخير كله عاجله وآجله ما علمت منه وما لم أعلم</div>
+                        <div class="prayer-div-list copyable">اللهم يا مقلب القلوب ثبت قلبي على دينك</div>
+                        <div class="prayer-div-list copyable">اللهم ارزقني حسن الخاتمة واغفر لي ولوالدي وللمسلمين أجمعين</div>
+                        <div class="prayer-div-list copyable">اللهم بارك لي في أولادي وذريتي واجعلهم من عبادك الصالحين</div>
+                        <div class="prayer-div-list copyable">رب اشرح لي صدري ويسر لي أمري واحلل عقدة من لساني يفقهوا قولي</div>
+                        <div class="prayer-div-list copyable">اللهم إني أعوذ بك من زوال نعمتك وتحول عافيتك وفجاءة نقمتك وجميع سخطك</div>
+                        <div class="prayer-div-list copyable">اللهم أصلح لي ديني الذي هو عصمة أمري، وأصلح لي دنياي التي فيها معاشي، وأصلح لي آخرتي التي فيها معادي</div>
+                        <div class="prayer-div-list copyable">اللهم إني أسألك حبك وحب من يحبك وحب كل عمل يقربني إلى حبك</div>
+                        <div class="prayer-div-list copyable">اللهم إني أسألك الجنة وما قرب إليها من قول أو عمل، وأعوذ بك من النار وما قرب إليها من قول أو عمل</div>
+                        <div class="prayer-div-list copyable">اللهم اغفر لي وارحمني وعافني واعف عني وارزقني وأكرمني وأحييني وأمتني وأنت خير الرازقين</div>
+                        <div class="prayer-div-list copyable">اللهم إني أسألك العافية في الدنيا والآخرة، اللهم متعني بسمعي وبصري واجعلهما الوارث مني</div>
+                        <div class="prayer-div-list copyable">اللهم إني أعوذ بك من الكفر والفقر ومن عذاب القبر، لا إله إلا أنت</div>
+                        <div class="prayer-div-list copyable">ربنا آتنا في الدنيا حسنة وفي الآخرة حسنة وقنا عذاب النار</div>
+                        <div class="prayer-div-list copyable">اللهم أنت ربي لا إله إلا أنت، خلقتني وأنا عبدك، وأنا على عهدك ووعدك ما استطعت</div>
+                        <div class="prayer-div-list copyable">اللهم اجعلني شكوراً، واجعلني صبوراً، واجعلني في عيني صغيراً وفي أعين الناس كبيراً</div>
+                        <div class="prayer-div-list copyable">اللهم طهر قلبي من النفاق، وعملي من الرياء، ولساني من الكذب، وعيني من الخيانة</div>
+                        <div class="prayer-div-list copyable">اللهم اجعل لي نوراً في قلبي، ونوراً في قبري، ونوراً في سمعي، ونوراً في بصري، ونوراً من بين يدي ونوراً من خلفي</div>
+                        <div class="prayer-div-list copyable">اللهم إني أسألك الهدى والتقى والعفاف والغنى</div>
+                        <div class="prayer-div-list copyable">اللهم احفظني من بين يدي ومن خلفي وعن يميني وعن شمالي ومن فوقي، وأعوذ بعظمتك أن أغتال من تحتي</div>
+                        <div class="prayer-div-list copyable">اللهم إني ظلمت نفسي ظلماً كثيراً ولا يغفر الذنوب إلا أنت، فاغفر لي مغفرة من عندك وارحمني إنك أنت الغفور الرحيم</div>
+                        <div class="prayer-div-list copyable">اللهم إني أسألك أن تجعل لي من كل هم فرجاً، ومن كل ضيق مخرجاً، ومن كل بلاء عافية</div>
+                        <div class="prayer-div-list copyable">اللهم إني أعوذ بك من شر ما عملت ومن شر ما لم أعمل، ومن شر ما تسلط به علينا الشيطان</div>
+                        <div class="prayer-div-list copyable">اللهم تقبل توبتي، واغسل حوبتي، وأجب دعوتي، وثبت حجتي، واهد قلبي، وسدد لساني، واسلل سخيمة صدري</div>
+                        <div class="prayer-div-list copyable">اللهم إني أسألك علماً نافعاً، ورزقاً طيباً، وعملاً متقبلاً</div>
+                    </div>
+
+                    <!-- iframe -->
+                    <div id="section-4" class="prayer-div-div section">
+                        <span class="ss">< iframe > التضمين بموقعك</span>
+                        <textarea readonly class="c-sec copyable"><iframe src="https://index-ten-beta.vercel.app/" frameborder="0"></iframe></textarea>
+                        <gol></gol>
+                        <span class="ss">🤲 هذا ماتيسر لا تنسانا من صالح دعائك</span>
+                        <div class="kkoopd">
+                            <button class="material-symbols-outlined" onclick="window.open('https://wa.me/966597530810', '_blank')"> <ion-icon name="chatbubbles-outline"></ion-icon> </button>                            <xxe></xxe>
+                            <button onclick="window.open('https://wa.me/?text=https://index-ten-beta.vercel.app/')" class="material-symbols-outlined"><span>share</span></button>
+                        </div>
+                        <div class="good cor">تم الإصدار عام ,١٠/١/٢٠٢٤م<br><span> جميع الحقوق محفوظة لدى <a href="https://quran-eight-zeta.vercel.app/" style="text-decoration: none;color: #4d4d4d;">نور القرآن</a></span> </div>
+                    </div>
+                </div>
+            </div>
+            <p id="message"></p>
+            <div class="goool" id="adhan-alert-container">
+                <audio id="adhan-audio" src="image/019--1.mp3"></audio>
+                <div class="goool-div">
+                    <div><img src="image/set-diet-sound-bars.gif" alt=""></div>
+                    <div><h3>لقد حان وقت الأذان اذهب الى الصلاة</h3></div>
+                    <div class="goool-div2">
+                        <button class="material-symbols-outlined ripple-btn close-button" onclick="closeAdhanAlert()" onmousedown="createRipple(event)">close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="location-picker-layer" onclick="closeLocationPicker(event)">
+        <div class="location-picker-panel country-picker-panel" data-picker="country" onclick="event.stopPropagation()">
+            <div class="location-picker-header">
+                <!-- <span class="ccvve">0</span> -->
+                <div class="flex">
+                   <span class="location-picker-title">اختر الدولة</span>
+                    <button type="button" class="location-picker-close" onclick="closeLocationPicker()"><span class="material-symbols-outlined">close</span></button> 
+                </div>
+            </div>
+            <input type="search" class="location-picker-search country-picker-search" placeholder="ابحث عن دولة" oninput="renderPickerOptions('country', this.value)">
+            <div class="location-picker-list country-picker-list"></div>
+        </div>
+
+        <div class="location-picker-panel city-picker-panel" data-picker="city" onclick="event.stopPropagation()">
+            <div class="location-picker-header">
+                <!-- <span class="ccvve">0</span> -->
+                <div class="flex">
+                    <span class="location-picker-title">اختر المدينة</span>
+                    <button type="button" class="location-picker-close" onclick="closeLocationPicker()"><span class="material-symbols-outlined">close</span></button>
+                </div>
+            </div>
+            <input type="search" class="location-picker-search city-picker-search" placeholder="ابحث عن مدينة" oninput="renderPickerOptions('city', this.value)">
+            <div class="location-picker-list city-picker-list"></div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    
+    <script>
+    // ========== دالة تحويل الأرقام إلى عربية ==========
+    function toArabicNumerals(str) {
+        if (!str) return str;
+        return str.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+    }
+
+    // ========== تحويل الوقت من HH:mm إلى صيغة ص/م بأرقام عربية ==========
+    function formatTimeArabic(timeStr) {
+        if (!timeStr || timeStr === '--:--') return '--:--';
+        const parts = timeStr.split(':');
+        let hours = parseInt(parts[0], 10);
+        const minutes = parseInt(parts[1], 10);
+        const period = hours >= 12 ? 'م' : 'ص';
+        hours = hours % 12 || 12;
+        const hStr = toArabicNumerals(String(hours).padStart(2, '0'));
+        const mStr = toArabicNumerals(String(minutes).padStart(2, '0'));
+        return `${hStr}:${mStr} ${period}`;
+    }
+
+    </script>
+
+    <script>
+    // ========== Prayer times logic ==========
+    let countdownTimeout = null;
+    let adhanTimeout = null;
+    let selectedCountry = '';
+    let selectedCity = '';
+
+    function saveToLocalStorage(country, city, timings) {
+        localStorage.setItem('selectedCountry', country);
+        localStorage.setItem('selectedCity', city);
+        localStorage.setItem('prayerTimings', JSON.stringify(timings));
+    }
+
+    function loadFromLocalStorage() {
+        const savedCountry = localStorage.getItem('selectedCountry');
+        const savedCity = localStorage.getItem('selectedCity');
+        const savedTimings = JSON.parse(localStorage.getItem('prayerTimings'));
+        return { savedCountry, savedCity, savedTimings };
+    }
+
+    // تحديث عرض الأوقات في الجدول
+    function displayTimings(timings, container) {
+        container.querySelector('.fajr-time').textContent    = formatTimeArabic(timings.Fajr);
+        container.querySelector('.sunrise-time').textContent = formatTimeArabic(timings.Sunrise);
+        container.querySelector('.dhuhr-time').textContent   = formatTimeArabic(timings.Dhuhr);
+        container.querySelector('.asr-time').textContent     = formatTimeArabic(timings.Asr);
+        container.querySelector('.maghrib-time').textContent = formatTimeArabic(timings.Maghrib);
+        container.querySelector('.isha-time').textContent    = formatTimeArabic(timings.Isha);
+    }
+
+    // استرجاع وعرض البيانات المحفوظة بعد الريلود
+    function updateUIFromLocalStorage(container) {
+        const { savedCountry, savedCity, savedTimings } = loadFromLocalStorage();
+
+        if (savedCountry) {
+            selectedCountry = savedCountry;
+            selectedCity = savedCity || '';
+            updatePickerButtons(container);
+        }
+
+        if (savedTimings) {
+            displayTimings(savedTimings, container);
+            updateCountdown(savedTimings, container);
+        }
+    }
+
+    // const countriesAndCities = {
+    //     "السعودية": ["الرياض", "جدة", "مكة المكرمة", "المدينة المنورة", "الدمام", "الخبر", "الطائف", "بريدة", "أبها", "تبوك", "حائل", "نجران", "جيزان", "القطيف", "خميس مشيط", "الهفوف", "المبرز", "الظهران", "الجبيل", "ينبع", "حفر الباطن", "سكاكا", "عرعر", "بيشة", "القنفذة", "الباحة", "الوجه", "ضباء", "القريات", "رفحاء", "الزلفي", "الخرج", "المجمعة", "الدوادمي", "شرورة", "حوطة بني تميم", "وادي الدواسر", "رأس تنورة", "الحائط", "السليل", "طريف", "رجال ألمع", "بلجرشي", "تنومة", "أحد رفيدة", "تثليث", "الليث", "العلا", "النماص", "بيش", "العارضة", "سراة عبيدة", "محايل عسير", "الطوال", "الريث", "الدرب", "ظهران الجنوب", "ضمد", "بارق", "تربة", "حبونا", "الخرمة", "المخواة", "القويعية", "مرات", "عفيف", "البدائع", "عنيزة", "الأسياح", "النبهانية", "رياض الخبراء", "الشماسية", "المذنب", "الرس", "البكيرية", "خليص", "رابغ", "الكامل", "بحرة", "ثول", "حريملاء", "العيينة", "الدرعية", "حوطة سدير", "تمير", "ضرما", "المزاحمية", "الحريق", "صامطة", "الدائر", "فيفا", "صبيا", "العيدابي", "وادي الفرع", "الحناكية", "المندق", "القرى", "العقيق", "بلجرشي"],
+    //     "مصر": ["القاهرة", "الجيزة", "الإسكندرية", "بورسعيد", "السويس", "الإسماعيلية", "دمياط", "المنصورة", "طنطا", "الزقازيق", "بنها", "شبين الكوم", "كفر الشيخ", "دمنهور", "المحلة الكبرى", "المنيا", "أسيوط", "سوهاج", "قنا", "الأقصر", "أسوان", "الفيوم", "بني سويف", "الغردقة", "شرم الشيخ", "مرسى مطروح", "العريش", "رفح", "الشيخ زويد", "الخارجة", "الداخلة", "سيوة", "نويبع", "طابا", "رأس سدر", "أبو زنيمة", "دهب", "سانت كاترين", "قوص", "إدفو", "أرمنت", "القصير", "سفاجا", "مرسى علم", "بلبيس", "أبو كبير", "أبو حماد", "فاقوس", "الحسينية", "ديرب نجم", "منيا القمح", "ههيا", "كفر صقر", "أولاد صقر", "الصالحية الجديدة", "العاشر من رمضان", "مغاغة", "سمالوط", "مطاي", "أبو قرقاص", "بني مزار", "ملوي", "دير مواس", "منفلوط", "البداري", "ساحل سليم", "أبوتيج", "صدفا", "الغنايم", "جرجا", "البلينا", "طهطا", "طما", "المراغة", "أخميم", "دار السلام", "نجع حمادي", "فرشوط", "دشنا", "الوقف", "قوص", "نقادة", "أرمنت", "كوم أمبو", "نصر النوبة", "دراو", "توشكى", "أبوسمبل", "الفشن", "إهناسيا", "الواسطى", "سمسطا", "ببا", "مطوبس", "فوه", "دسوق", "بيلا", "الحامول", "قلين", "سيدى سالم", "الرياض", "مطوبس"],
+    //     "الإمارات": ["دبي", "أبو ظبي", "الشارقة", "العين", "رأس الخيمة", "الفجيرة", "أبوظبي", "دبي", "الشارقة", "عجمان", "أم القيوين", "رأس الخيمة", "الفجيرة", "العين", "خورفكان", "دبا الفجيرة", "دبا الحصن", "حتا", "الذيد", "مصفوت", "المدام", "فلج المعلا", "مسافي", "ليوا", "الرويس", "دلما", "المرفأ", "زايد", "السلع", "غياثي", "السلع"],
+    //     "الكويت": ["مدينة الكويت", "حولي", "الأحمدي", "الفروانية", "الجهراء", "العاصمة", "الأحمدي", "الجهراء", "الفروانية", "حولي", "مبارك الكبير", "السالمية", "الفحيحيل", "صباح السالم", "المنقف", "الرميثية", "خيطان", "بيان", "القرين", "الفنطاس", "الجابرية", "المهبولة", "سلوى", "أبو حليفة", "الزور", "الوفرة", "صباح الأحمد", "المسيلة", "الصليبية", "العارضية", "الصليبخات", "الشويخ", "كبد", "العبدلي", "المسايل", "شرق", "الدسمة", "الدعية", "بنيد القار", "مشرف", "الشعب", "النسيم", "النزهة", "القادسية", "اليرموك", "الفيحاء", "العديلية", "الروضة", "السرة", "الصديق", "حطين", "الظهر", "جابر الأحمد", "مدينة سعد العبد الله"],
+    //     "قطر": ["الدوحة", "الوكرة", "الخور", "الريان", "العاصمة", "الدوحة", "الريان", "الوكرة", "الخور", "الشحانية", "دخان", "مسيعيد", "زكريت", "أم صلال", "الجميلية", "الغارية", "أبو سمرة", "روضة راشد", "أم باب", "الذخيرة", "السيلية", "اللؤلؤة", "الغرافة", "الوجبة", "المرة", "روضة الجهانية", "لوسيل"],
+    //     "الجزائر": ["الجزائر العاصمة", "وهران", "قسنطينة", "عنابة", "البليدة", "باتنة", "سطيف", "تيزي وزو", "بشار", "بجاية", "تمنراست", "تلمسان", "ورقلة", "بسكرة", "الجلفة", "المدية", "غرداية", "تبسة", "الشلف", "الأغواط", "عين تموشنت", "سوق أهراس", "معسكر", "المسيلة", "سيدي بلعباس", "عين الدفلى", "برج بوعريريج", "ميلة", "تيارت", "تيسمسيلت", "أدرار", "النعامة", "تيبازة", "جيجل", "سعيدة", "خنشلة", "الوادي", "البيض", "غليزان", "أم البواقي"],
+    //     "المغرب": ["الرباط", "الدار البيضاء", "مراكش", "فاس", "طنجة", "مكناس", "تطوان", "وجدة", "أغادير", "القنيطرة", "بني ملال", "خريبكة", "الجديدة", "سلا", "آسفي", "تارودانت", "العيون", "الناظور", "الراشيدية", "الحسيمة", "قلعة السراغنة", "الصويرة", "تمارة", "تاونات", "سيدي سليمان", "سيدي قاسم", "المحمدية", "العرائش", "الفقيه بن صالح", "تازة", "القصر الكبير", "الداخلة", "الخميسات", "زاكورة", "ورزازات", "تينغير"],
+    //     "السودان": ["الخرطوم", "أم درمان", "بحري", "بورتسودان", "كسلا", "الأبيض", "الفاشر", "مدني", "عطبرة", "دنقلا", "كادقلي", "سنار", "الدمازين", "كوستي", "القضارف", "نيالا", "الجنينة", "زالنجي", "ود مدني", "شندي", "الحصاحيصا", "رفاعة", "الرهد", "سواكن", "بارا", "أبو جبيهة", "طوكر", "الدلنج", "بابنوسة", "كريمة"],
+    //     "سوريا": ["دمشق", "حلب", "حمص", "حماة", "اللاذقية", "طرطوس", "إدلب", "دير الزور", "الحسكة", "الرقة", "السويداء", "درعا", "القنيطرة", "الميادين", "البوكمال", "جبلة", "تل أبيض", "منبج", "إعزاز", "الباب", "صلخد", "دوما", "داريا", "الزبداني", "السلمية", "مصياف", "بانياس", "صافيتا", "المالكية", "عامودا"],
+    //     "لبنان": ["بيروت", "طرابلس", "صيدا", "صور", "جبيل", "بعلبك", "زحلة", "النبطية", "جونية", "عاليه", "بعبدا", "بشري", "بعقلين", "شتورة", "دير القمر", "تبنين", "حاصبيا", "جب جنين", "راشيا", "بنت جبيل"],
+    //     "الأردن": ["عمان", "الزرقاء", "إربد", "العقبة", "المفرق", "السلط", "الكرك", "معان", "مادبا", "جرش", "عجلون", "الرمثا", "الطفيلة", "الفحيص", "الصويفية", "دير علا", "الشوبك"],
+    //     "تونس": ["تونس", "صفاقس", "سوسة", "بنزرت", "قابس", "القيروان", "تونس العاصمة", "سوسة", "صفاقس", "نابل", "قفصة", "المهدية", "القيروان", "بنزرت", "سليانة", "جندوبة", "زغوان", "مدنين", "قبلي", "تطاوين", "المنيهلة"],
+    //     "العراق": ["بغداد", "البصرة", "الموصل", "أربيل", "النجف", "كربلاء", "دهوك", "السليمانية", "الكوت", "بعقوبة", "سامراء", "الرمادي", "الفلوجة", "تكريت", "الحلة"],
+    //     "اليمن": ["صنعاء", "عدن", "تعز", "الحديدة", "إب", "حضرموت", "ذمار", "البيضاء", "شبوة", "الجوف", "مأرب", "الضالع", "حجة", "المهرة", "لحج"],
+    //     "ليبيا": ["طرابلس", "بنغازي", "مصراتة", "سبها", "درنة", "الزاوية", "البيضاء", "جادو", "غريان", "اجدابيا", "زليتن", "الخمس", "ترهونة"],
+    //     "موريتانيا": ["نواكشوط", "نواذيبو", "كيفه", "روصو", "العيون", "أطار", "أكجوجت", "سيلبابي", "كيهيدي", "تجكجة"],
+    //     "البحرين": ["المنامة", "المحرق", "الرفاع", "الحد", "سترة", "جد حفص", "عيسى", "الدراز", "البديع", "الزلاق"],
+    //     "عمان": ["مسقط", "صلالة", "نزوى", "بهلاء", "صور", "البريمي", "صحار", "بركاء", "عبري", "سيت", "دماء والطائيين", "مطرح", "الخابورة", "إبراء", "جعلان بني بو علي", "الرستاق", "الكامل والوافي", "وادي المعاول"],
+    //     "جيبوتي": ["جيبوتي (العاصمة)", "تاجورة", "علي سابيح", "دوراليه", "قوريولي", "بليلة", "فجر", "دمجلي", "عسل", "أوبوك"],
+    //     "فلسطين": ["القدس", "رام الله", "نابلس", "بيت لحم", "الخليل", "جنين", "طولكرم", "قلقيلية", "أريحا", "سلفيت", "طوباس", "بيت لحم", "غزة", "خان يونس", "رفح", "دير البلح", "خانيونس", "الشجاعية", "الزوايدة", "النصيرات", "المغازي", "بيت لاهيا"],
+    //     "الصومال": ["مقديشو (العاصمة)", "بوساسو", "هرجيسا", "جالكعيو", "برعو", "كيسمايو", "بيدوا", "بلدوين", "طوسمريب", "جروي", "ملسو", "طوكر", "لوقا"],
+    //     "جزر القمر": ["موروني (العاصمة)", "موهيلي", "أنجوان", "جزيرة القمر الكبرى", "نينغوي", "موي"],
+    //     "إريتريا": ["أسمرة (العاصمة)", "كرن", "مصوع", "نيقلا", "تسني", "بارنتو", "دفني", "عدال"],
+    //     "جنوب السودان": ["جوبا (العاصمة)", "واو", "ملكال", "بور", "ياي", "ملوال", "جوزي", "رياك", "أروب"]
+    // };
+
+    function getPrayerContainer() {
+        return document.querySelector('.prayer-container');
+    }
+
+    function updatePickerButtons(container = getPrayerContainer()) {
+        const countryButton = container.querySelector('.country-picker-button');
+        const cityButton = container.querySelector('.city-picker-button');
+        countryButton.textContent = selectedCountry || 'اختر الدولة';
+        cityButton.textContent = selectedCity || 'اختر المدينة';
+        cityButton.disabled = !selectedCountry;
+    }
+
+    function openLocationPicker(type) {
+        if (type === 'city' && !selectedCountry) return;
+        const layer = document.querySelector('.location-picker-layer');
+        const panels = document.querySelectorAll('.location-picker-panel');
+        panels.forEach(panel => panel.classList.toggle('active', panel.dataset.picker === type));
+        layer.classList.add('show');
+        renderPickerOptions(type, '');
+        const searchInput = document.querySelector(`.${type}-picker-search`);
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.blur();
+        }
+        setTimeout(() => scrollToSelectedPickerOption(type), 80);
+    }
+
+    function closeLocationPicker(event) {
+        if (event && event.target !== event.currentTarget) return;
+        const layer = document.querySelector('.location-picker-layer');
+        if (!layer) return;
+        layer.classList.remove('show');
+        setTimeout(() => {
+            if (!layer.classList.contains('show')) {
+                layer.querySelectorAll('.location-picker-panel').forEach(panel => panel.classList.remove('active'));
+            }
+        }, 450);
+    }
+
+    function renderPickerOptions(type, query = '') {
+        const list = document.querySelector(`.${type}-picker-list`);
+        const options = type === 'country' ? Object.keys(countriesAndCities) : (countriesAndCities[selectedCountry] || []);
+        const normalizedQuery = query.trim().toLowerCase();
+        const filteredOptions = options.filter(option => option.toLowerCase().includes(normalizedQuery));
+        list.innerHTML = '';
+
+        if (!filteredOptions.length) {
+            const empty = document.createElement('div');
+            empty.className = 'location-picker-empty';
+            empty.textContent = 'لا توجد نتائج';
+            list.appendChild(empty);
+            return;
+        }
+
+        filteredOptions.forEach(option => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'location-picker-option';
+            button.textContent = option;
+            if ((type === 'country' && option === selectedCountry) || (type === 'city' && option === selectedCity)) {
+                button.classList.add('selected');
+            }
+            button.onclick = () => type === 'country' ? chooseCountry(option) : chooseCity(option);
+            list.appendChild(button);
+        });
+    }
+
+    function scrollToSelectedPickerOption(type) {
+        const list = document.querySelector(`.${type}-picker-list`);
+        const selectedOption = list ? list.querySelector('.location-picker-option.selected') : null;
+        if (!list || !selectedOption) return;
+
+        const targetTop = selectedOption.offsetTop - (list.clientHeight / 2) + (selectedOption.clientHeight / 2);
+        list.scrollTo({
+            top: Math.max(targetTop, 0),
+            behavior: 'smooth'
+        });
+    }
+
+    function chooseCountry(country) {
+        selectedCountry = country;
+        selectedCity = '';
+        localStorage.setItem('selectedCountry', selectedCountry);
+        localStorage.removeItem('selectedCity');
+        updatePickerButtons();
+        closeLocationPicker();
+    }
+
+    function chooseCity(city) {
+        selectedCity = city;
+        updatePickerButtons();
+        closeLocationPicker();
+        if (selectedCity && selectedCountry) {
+            fetchPrayerTimes(selectedCity, selectedCountry, getPrayerContainer());
+        }
+    }
+
+    window.onload = function () {
+        const container = document.querySelector('.prayer-container');
+        renderPickerOptions('country');
+        updatePickerButtons(container);
+        // استرجاع آخر اختيار للمستخدم تلقائياً
+        updateUIFromLocalStorage(container);
+        updateDate();
+        setInterval(updateDate, 24 * 60 * 60 * 1000);
+    };
+
+    function fetchPrayerTimes(city, country, container) {
+        const apiUrl = `https://api.aladhan.com/v1/timingsByCity?city=${city}&country=${country}&method=4`;
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                const timings = data.data.timings;
+                displayTimings(timings, container);
+                saveToLocalStorage(selectedCountry, selectedCity, timings);
+                updateCountdown(timings, container);
+            });
+    }
+
+    function updateCountdown(timings, container) {
+        if (countdownTimeout) clearTimeout(countdownTimeout);
+
+        const now = moment();
+        // الشروق لا يُحسب كوقت صلاة في العداد
+        const prayerTimes = [
+            { row: container.querySelector('.fajr-prayer-row'),    time: moment(timings.Fajr, "HH:mm") },
+            { row: container.querySelector('.dhuhr-prayer-row'),   time: moment(timings.Dhuhr, "HH:mm") },
+            { row: container.querySelector('.asr-prayer-row'),     time: moment(timings.Asr, "HH:mm") },
+            { row: container.querySelector('.maghrib-prayer-row'), time: moment(timings.Maghrib, "HH:mm") },
+            { row: container.querySelector('.isha-prayer-row'),    time: moment(timings.Isha, "HH:mm") }
+        ];
+
+        let nextPrayer = null;
+        prayerTimes.forEach(p => p.row.classList.remove('highlighted-next-prayer'));
+
+        for (let i = 0; i < prayerTimes.length; i++) {
+            if (now.isBefore(prayerTimes[i].time)) {
+                nextPrayer = prayerTimes[i];
+                break;
+            }
+        }
+
+        if (!nextPrayer) {
+            nextPrayer = {
+                row: container.querySelector('.fajr-prayer-row'),
+                time: moment(timings.Fajr, "HH:mm").add(1, 'day')
+            };
+        }
+
+        nextPrayer.row.classList.add('highlighted-next-prayer');
+        const diff = nextPrayer.time.diff(now);
+
+        // العداد بأرقام عربية
+        const hh = toArabicNumerals(Math.floor(diff / 3600000).toString().padStart(2, '0'));
+        const mm = toArabicNumerals((Math.floor(diff / 60000) % 60).toString().padStart(2, '0'));
+        const ss = toArabicNumerals((Math.floor(diff / 1000) % 60).toString().padStart(2, '0'));
+        container.querySelector('.prayer-countdown-timer').textContent = `${hh}:${mm}:${ss}`;
+        container.querySelector('.next-prayer-time').textContent = formatTimeArabic(nextPrayer.time.format("HH:mm"));
+
+        if (diff < 1000 * 60) showAdhanAlert();
+        countdownTimeout = setTimeout(() => updateCountdown(timings, container), 1000);
+    }
+
+    function showAdhanAlert() {
+        const adhanAlertDiv = document.getElementById('adhan-alert-container');
+        const adhanAudio = document.getElementById('adhan-audio');
+        adhanAlertDiv.style.display = 'flex';
+        adhanAudio.play();
+        adhanTimeout = setTimeout(() => {
+            adhanAlertDiv.style.display = 'none';
+            adhanAudio.pause();
+            adhanAudio.currentTime = 0;
+        }, adhanAudio.duration * 1000);
+    }
+
+    function closeAdhanAlert() {
+        const adhanAlertDiv = document.getElementById('adhan-alert-container');
+        const adhanAudio = document.getElementById('adhan-audio');
+        adhanAlertDiv.style.display = 'none';
+        adhanAudio.pause();
+        adhanAudio.currentTime = 0;
+        if (adhanTimeout) clearTimeout(adhanTimeout);
+    }
+
+    function updateDate() {
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const today = new Date();
+        const formattedDate = today.toLocaleDateString('ar-EG', options);
+        document.getElementById('date').innerText = formattedDate;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll(".copyable").forEach(el => {
+            el.addEventListener("click", () => {
+                const sel = window.getSelection(), range = document.createRange();
+                range.selectNodeContents(el);
+                sel.removeAllRanges();
+                sel.addRange(range);
+                const msg = document.getElementById("message");
+                (navigator.clipboard ? navigator.clipboard.writeText(el.textContent) : Promise.reject())
+                    .catch(() => { document.execCommand("copy"); return Promise.resolve(); })
+                    .then(() => {
+                        msg.style.display = "block";
+                        msg.textContent = "تم النسخ!";
+                        setTimeout(() => { msg.style.display = "none"; sel.removeAllRanges(); }, 3000);
+                    });
+            });
+        });
+    });
+    </script>
+
+    <script>
+    // ========== scroll & ripple ==========
+    let activeButton = null;
+
+    function scrollToDiv(divId, button) {
+        const element = document.getElementById(divId);
+        element.scrollIntoView({ behavior: 'smooth' });
+        if (activeButton) activeButton.classList.remove('active');
+        button.classList.add('active');
+        activeButton = button;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const buttons = document.querySelectorAll('.prayer-menu button');
+        if (buttons.length > 0) {
+            const lastButton = buttons[buttons.length - 1];
+            lastButton.classList.add('active');
+            activeButton = lastButton;
+        }
+        buttons.forEach(button => {
+            button.classList.add('ripple-btn');
+            button.setAttribute('onmousedown', 'createRipple(event)');
+        });
+    });
+
+    function createRipple(event) {
+        const button = event.currentTarget;
+        const ripple = document.createElement("span");
+        const rect = button.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const x = event.clientX - rect.left - size / 2;
+        const y = event.clientY - rect.top - size / 2;
+        ripple.style.width = ripple.style.height = `${size}px`;
+        ripple.style.left = x + "px";
+        ripple.style.top = y + "px";
+        ripple.classList.add("ripple");
+        button.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+    }
+    </script>
 
 </body>
 </html>
-`;
-            this.iframe.srcdoc = finalCode;
-        };
-
-        const BATCH_LINE_COUNT = 300;
-        const HISTORY_LIMIT = 100;
-        let renderToken = 0;
-        let beforeInputSnapshot = null;
-        let isApplyingEditorState = false;
-        const historyByLang = {
-            html: { undo: [], redo: [] },
-            css: { undo: [], redo: [] },
-            js: { undo: [], redo: [] }
-        };
-        const editorViewByLang = {
-            html: { start: 0, end: 0, scrollTop: 0 },
-            css: { start: 0, end: 0, scrollTop: 0 },
-            js: { start: 0, end: 0, scrollTop: 0 }
-        };
-
-        const getOffsetFromPosition = (node, offset) => {
-            if (!node || !codeBox.contains(node)) return 0;
-
-            const range = document.createRange();
-            range.selectNodeContents(codeBox);
-            range.setEnd(node, offset);
-            return range.toString().length;
-        };
-
-        const getSelectionOffsets = () => {
-            const selection = window.getSelection();
-            if (!selection.rangeCount || !codeBox.contains(selection.anchorNode)) {
-                return { start: 0, end: 0 };
-            }
-
-            const range = selection.getRangeAt(0);
-            const start = getOffsetFromPosition(range.startContainer, range.startOffset);
-            const end = getOffsetFromPosition(range.endContainer, range.endOffset);
-            return { start, end };
-        };
-
-        const getCaretOffset = () => {
-            return getSelectionOffsets().end;
-        };
-
-        const restoreSelection = (startOffset, endOffset = startOffset) => {
-            const selection = window.getSelection();
-            const walker = document.createTreeWalker(codeBox, NodeFilter.SHOW_TEXT);
-            let currentOffset = 0;
-            let node = walker.nextNode();
-            const range = document.createRange();
-            let foundStart = false;
-            let foundEnd = false;
-
-            while (node) {
-                const nextOffset = currentOffset + node.length;
-                if (!foundStart && nextOffset >= startOffset) {
-                    range.setStart(node, Math.max(0, startOffset - currentOffset));
-                    foundStart = true;
-                }
-                if (!foundEnd && nextOffset >= endOffset) {
-                    range.setEnd(node, Math.max(0, endOffset - currentOffset));
-                    foundEnd = true;
-                    break;
-                }
-                currentOffset = nextOffset;
-                node = walker.nextNode();
-            }
-
-            if (!foundStart) {
-                range.selectNodeContents(codeBox);
-                range.collapse(false);
-            } else if (!foundEnd) {
-                range.setEndAfter(codeBox.lastChild || codeBox);
-            }
-
-            selection.removeAllRanges();
-            selection.addRange(range);
-        };
-
-        const restoreCaret = (offset) => restoreSelection(offset);
-
-        const selectAllCode = () => {
-            const selection = window.getSelection();
-            const range = document.createRange();
-            range.selectNodeContents(codeBox);
-            selection.removeAllRanges();
-            selection.addRange(range);
-        };
-
-        const normalizeEditorText = () => codeBox.textContent.replace(/\u00a0/g, " ");
-
-        const syncLineNumberScroll = () => {
-            lineNumbers.scrollTop = codeBox.scrollTop;
-        };
-
-        const waitForNextFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
-
-        const createSnapshot = () => {
-            const selection = getSelectionOffsets();
-            return {
-                lang: this.currentLang,
-                text: normalizeEditorText(),
-                start: selection.start,
-                end: selection.end,
-                scrollTop: codeBox.scrollTop
-            };
-        };
-
-        const saveCurrentEditorView = () => {
-            const selection = getSelectionOffsets();
-            editorViewByLang[this.currentLang] = {
-                start: selection.start,
-                end: selection.end,
-                scrollTop: codeBox.scrollTop
-            };
-        };
-
-        const pushHistory = (snapshot = createSnapshot()) => {
-            const history = historyByLang[snapshot.lang || this.currentLang];
-            if (!history) return;
-
-            history.undo.push(snapshot);
-            if (history.undo.length > HISTORY_LIMIT) history.undo.shift();
-            history.redo.length = 0;
-        };
-
-        const updateLineNumbers = async (text = normalizeEditorText(), token = renderToken) => {
-            const count = Math.max(1, text.split("\n").length);
-            lineNumbers.innerHTML = "";
-
-            for (let index = 0; index < count; index += BATCH_LINE_COUNT) {
-                if (token !== renderToken) return false;
-
-                const end = Math.min(index + BATCH_LINE_COUNT, count);
-                lineNumbers.insertAdjacentHTML(
-                    "beforeend",
-                    Array.from({ length: end - index }, (_, offset) => `<div>${index + offset + 1}</div>`).join("")
-                );
-
-                if (end < count) await waitForNextFrame();
-            }
-
-            syncLineNumberScroll();
-            return true;
-        };
-
-        const setCodeWithHighlight = async (text, selectionStart = getCaretOffset(), selectionEnd = selectionStart, scrollTop = codeBox.scrollTop) => {
-            const token = ++renderToken;
-            const lines = text.split("\n");
-            codeBox.innerHTML = "";
-            isApplyingEditorState = true;
-            let chunkOffset = 0;
-
-            for (let index = 0; index < lines.length; index += BATCH_LINE_COUNT) {
-                if (token !== renderToken) {
-                    isApplyingEditorState = false;
-                    return;
-                }
-
-                const end = Math.min(index + BATCH_LINE_COUNT, lines.length);
-                const chunk = lines.slice(index, end).join("\n") + (end < lines.length ? "\n" : "");
-                codeBox.insertAdjacentHTML("beforeend", highlightCode(chunk, chunkOffset));
-                chunkOffset += chunk.length;
-
-                if (end < lines.length) await waitForNextFrame();
-            }
-
-            await updateLineNumbers(text, token);
-            if (token !== renderToken) {
-                isApplyingEditorState = false;
-                return;
-            }
-
-            this.codes[this.currentLang] = text;
-            codeBox.scrollTop = scrollTop;
-            syncLineNumberScroll();
-            restoreSelection(selectionStart, selectionEnd);
-            isApplyingEditorState = false;
-        };
-
-        const refreshEditor = async (caretOffset) => {
-            const text = normalizeEditorText();
-            this.codes[this.currentLang] = text;
-            await setCodeWithHighlight(text, caretOffset);
-            updatePreview();
-        };
-
-        const replaceTextRange = async (start, end, replacement, recordHistory = true) => {
-            const currentText = normalizeEditorText();
-            const nextText = currentText.slice(0, start) + replacement + currentText.slice(end);
-            const nextOffset = start + replacement.length;
-
-            if (recordHistory) pushHistory({
-                lang: this.currentLang,
-                text: currentText,
-                start,
-                end,
-                scrollTop: codeBox.scrollTop
-            });
-
-            await setCodeWithHighlight(nextText, nextOffset, nextOffset);
-            updatePreview();
-        };
-
-        const applySnapshot = async (snapshot) => {
-            await setCodeWithHighlight(snapshot.text, snapshot.start, snapshot.end, snapshot.scrollTop);
-            updatePreview();
-        };
-
-        const undo = async () => {
-            const history = historyByLang[this.currentLang];
-            if (!history) return;
-
-            const previous = history.undo.pop();
-            if (!previous) return;
-
-            history.redo.push(createSnapshot());
-            await applySnapshot(previous);
-        };
-
-        const redo = async () => {
-            const history = historyByLang[this.currentLang];
-            if (!history) return;
-
-            const next = history.redo.pop();
-            if (!next) return;
-
-            history.undo.push(createSnapshot());
-            await applySnapshot(next);
-        };
-
-        const getDeleteOffsets = (inputType) => {
-            const text = normalizeEditorText();
-            const selection = getSelectionOffsets();
-
-            if (selection.start !== selection.end) return selection;
-
-            if (inputType === "deleteContentForward") {
-                return { start: selection.start, end: Math.min(text.length, selection.end + 1) };
-            }
-
-            if (inputType === "deleteWordBackward") {
-                const match = text.slice(0, selection.start).match(/\s*\S+\s*$/);
-                return { start: match ? selection.start - match[0].length : selection.start, end: selection.end };
-            }
-
-            if (inputType === "deleteWordForward") {
-                const match = text.slice(selection.end).match(/^\s*\S+/);
-                return { start: selection.start, end: match ? selection.end + match[0].length : selection.end };
-            }
-
-            if (inputType === "deleteHardLineBackward" || inputType === "deleteSoftLineBackward") {
-                return { start: text.lastIndexOf("\n", selection.start - 1) + 1, end: selection.end };
-            }
-
-            if (inputType === "deleteHardLineForward" || inputType === "deleteSoftLineForward") {
-                const nextLine = text.indexOf("\n", selection.end);
-                return { start: selection.start, end: nextLine === -1 ? text.length : nextLine };
-            }
-
-            return { start: Math.max(0, selection.start - 1), end: selection.end };
-        };
-
-        const downloadIsOff = String(item.download || "").trim().toLowerCase() === "off";
-        downloadButton.disabled = downloadIsOff;
-
-        const getDownloadFileName = () => {
-            const fallbackExtensions = { html: "html", css: "css", js: "js" };
-            const fileName = item[this.currentLang] || `code.${fallbackExtensions[this.currentLang] || "txt"}`;
-            return fileName.split(/[\\/]/).pop() || fileName;
-        };
-
-        downloadButton.addEventListener("click", () => {
-            if (downloadButton.disabled) return;
-
-            this.codes[this.currentLang] = normalizeEditorText();
-
-            const fileName = getDownloadFileName();
-            if (!confirm(`Download ${fileName}?`)) return;
-
-            const blob = new Blob([this.codes[this.currentLang] || ""], { type: "text/plain;charset=utf-8" });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-
-            link.href = url;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            URL.revokeObjectURL(url);
-        });
-
-        available.forEach((lang, index) => {
-            const btn = document.createElement("button");
-            btn.className = "cm-tab" + (index === 0 ? " active" : "");
-            btn.textContent = lang.toUpperCase();
-            btn.dataset.lang = lang;
-
-            tabsContainer.appendChild(btn);
-
-            btn.onclick = () => {
-                this.codes[this.currentLang] = normalizeEditorText();
-                saveCurrentEditorView();
-                this.querySelectorAll(".cm-tab").forEach(x => x.classList.remove("active"));
-                btn.classList.add("active");
-                beforeInputSnapshot = null;
-                this.currentLang = lang;
-                const editorView = editorViewByLang[lang] || { start: 0, end: 0, scrollTop: 0 };
-                setCodeWithHighlight(this.codes[lang], editorView.start, editorView.end, editorView.scrollTop);
-            };
-        });
-
-        zoomButton.addEventListener("click", () => {
-            const isZoomed = wrapper.classList.toggle("cm-wrapper-is-zoomed");
-            document.body.classList.toggle("cm-wrapper-zoom", isZoomed);
-            zoomButton.innerHTML = isZoomed ? zoomCloseIcon : zoomOpenIcon;
-        });
-
-        codeBox.addEventListener("beforeinput", (e) => {
-            if (isApplyingEditorState) return;
-
-            if (e.inputType === "historyUndo") {
-                e.preventDefault();
-                undo();
-                return;
-            }
-
-            if (e.inputType === "historyRedo") {
-                e.preventDefault();
-                redo();
-                return;
-            }
-
-            if (e.inputType === "insertFromPaste") {
-                const pastedText = e.dataTransfer ? e.dataTransfer.getData("text/plain") : "";
-                if (!pastedText) return;
-
-                e.preventDefault();
-                const selection = getSelectionOffsets();
-                replaceTextRange(selection.start, selection.end, pastedText);
-                return;
-            }
-
-            if (e.inputType && e.inputType.startsWith("delete")) {
-                e.preventDefault();
-                const selection = getDeleteOffsets(e.inputType);
-                if (selection.start === selection.end) return;
-                replaceTextRange(selection.start, selection.end, "");
-                return;
-            }
-
-            beforeInputSnapshot = createSnapshot();
-        });
-
-        codeBox.addEventListener("input", () => {
-            if (isApplyingEditorState) return;
-
-            const snapshot = beforeInputSnapshot;
-            beforeInputSnapshot = null;
-            if (snapshot) pushHistory(snapshot);
-            refreshEditor();
-        });
-
-        codeBox.addEventListener("paste", (e) => {
-            e.preventDefault();
-            const pastedText = e.clipboardData ? e.clipboardData.getData("text/plain") : "";
-            const selection = getSelectionOffsets();
-            replaceTextRange(selection.start, selection.end, pastedText);
-        });
-
-        codeBox.addEventListener("click", (e) => {
-            const swatch = e.target.closest(".cm-color-swatch");
-            if (!swatch || this.currentLang !== "css") return;
-
-            e.preventDefault();
-
-            const start = Number(swatch.dataset.colorStart);
-            const end = Number(swatch.dataset.colorEnd);
-            const colorValue = swatch.dataset.colorValue || "";
-            const hexValue = colorToHex(colorValue);
-
-            if (!Number.isFinite(start) || !Number.isFinite(end) || !hexValue) return;
-
-            const input = document.createElement("input");
-            input.type = "color";
-            input.value = hexValue;
-            input.className = "cm-color-input";
-
-            input.addEventListener("change", () => {
-                replaceTextRange(start, end, input.value).then(() => input.remove());
-            }, { once: true });
-
-            document.body.appendChild(input);
-            input.click();
-        });
-
-        codeBox.addEventListener("scroll", () => {
-            syncLineNumberScroll();
-        });
-
-        codeBox.addEventListener("keydown", (e) => {
-            const htmlVoidTags = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
-            const isShortcut = e.ctrlKey || e.metaKey;
-
-            if (isShortcut && e.key.toLowerCase() === "a") {
-                e.preventDefault();
-                selectAllCode();
-                return;
-            }
-
-            if (isShortcut && e.key.toLowerCase() === "z" && !e.shiftKey) {
-                e.preventDefault();
-                undo();
-                return;
-            }
-
-            if (isShortcut && (e.key.toLowerCase() === "y" || (e.shiftKey && e.key.toLowerCase() === "z"))) {
-                e.preventDefault();
-                redo();
-                return;
-            }
-
-            if (this.currentLang === "css" && (e.key === "{" || e.key === "[")) {
-                e.preventDefault();
-                const selection = getSelectionOffsets();
-                const closeChar = e.key === "{" ? "}" : "]";
-                const currentText = normalizeEditorText();
-                const selectedText = currentText.slice(selection.start, selection.end);
-                const replacement = e.key + selectedText + closeChar;
-                const caretOffset = selection.start + 1 + selectedText.length;
-
-                replaceTextRange(selection.start, selection.end, replacement).then(() => restoreCaret(caretOffset));
-                return;
-            }
-
-            if (this.currentLang === "css" && e.key === ":") {
-                const selection = getSelectionOffsets();
-
-                if (selection.start === selection.end) {
-                    const textBeforeCaret = normalizeEditorText().slice(0, selection.start);
-                    const propertyMatch = textBeforeCaret.match(/(?:^|[{\n;]\s*)([a-zA-Z-][\w-]*)$/);
-
-                    if (propertyMatch) {
-                        e.preventDefault();
-                        replaceTextRange(selection.start, selection.end, ": ;").then(() => restoreCaret(selection.start + 2));
-                        return;
-                    }
-                }
-            }
-
-            if (e.key === "Enter") {
-                e.preventDefault();
-                const selection = getSelectionOffsets();
-
-                if (this.currentLang === "css" && selection.start === selection.end) {
-                    const text = normalizeEditorText();
-                    const charBefore = text[selection.start - 1];
-                    const charAfter = text[selection.start];
-
-                    if ((charBefore === "{" && charAfter === "}") || (charBefore === "[" && charAfter === "]")) {
-                        replaceTextRange(selection.start, selection.end, "\n    \n").then(() => restoreCaret(selection.start + 5));
-                        return;
-                    }
-
-                    if (charBefore === ";") {
-                        replaceTextRange(selection.start, selection.end, "\n    ").then(() => restoreCaret(selection.start + 5));
-                        return;
-                    }
-                }
-
-                replaceTextRange(selection.start, selection.end, "\n");
-                return;
-            }
-
-            if (e.key === "Tab") {
-                e.preventDefault();
-                const selection = getSelectionOffsets();
-                replaceTextRange(selection.start, selection.end, "    ");
-                return;
-            }
-
-            if (e.key === ">" && this.currentLang === "html") {
-                const offset = getCaretOffset();
-                const textBeforeCaret = normalizeEditorText().slice(0, offset);
-                const tagMatch = textBeforeCaret.match(/<([a-zA-Z][\w:-]*)(?:\s[^<>]*)?$/);
-
-                if (tagMatch && !textBeforeCaret.endsWith("/") && !htmlVoidTags.has(tagMatch[1].toLowerCase())) {
-                    e.preventDefault();
-                    replaceTextRange(offset, offset, `></${tagMatch[1]}>`).then(() => restoreCaret(offset + 1));
-                }
-            }
-        });
-
-        if (this.codes[this.currentLang]) {
-            setCodeWithHighlight(this.codes[this.currentLang]);
-        } else {
-            updateLineNumbers("");
-        }
-        updatePreview();
-    }
-}
-
-customElements.define("code-magic", CodeMagic);
-
-const style = document.createElement("style");
-
-style.textContent = `
-code-magic{
-display: block;
-margin: 20px auto;
-width: 902px;
-height: 539px;
-max-width: 100%;
-}
-
-.ccvvde3r4 {
-position: absolute;
-z-index: 10;
-right: 0;
-top: 0;
-height: 36px;
-display: flex;
-}
-.ccvvde3r4 button {
-cursor: pointer;
-transition: 0.2s;
-border: none;
-flex: 1 1;
-padding: 0 12px;
-display: flex;
-align-items: center;
-justify-content: center;
-margin: 4px 4px 0px 0px;
-border-radius: 25px;
-fill: #677485d6;
-background: #0000;
-}
-.ccvvde3r4 button:hover {
-fill: #5b6879;
-background: #6774850e;
-}
-.ccvvde3r4 button:active {
-transition: 0.0s;
-fill: #5b6879;
-background: #67748521;
-}
-.ccvvde3r4 button:disabled {
-opacity: .5;
-cursor: default;
-}
-.ccvvde3r4 button:disabled:hover,
-.ccvvde3r4 button:disabled:active {
-fill: #677485d6;
-background: #0000;
-}
-
-.cm-wrapper{
-position: relative;
-width: 900px;
-max-width: 100%;
-border:1px solid #ddd;
-border-radius:12px;
-/*overflow:hidden;*/
-font-family:Arial;
-background: #fafafa;
-}
-
-body.cm-wrapper-zoom{
-overflow: hidden;
-}
-body.cm-wrapper-zoom .cm-editor {
-border-radius: 12px 12px 12px 0px;
-}
-body.cm-wrapper-zoom .cm-body {
-border-radius: 0px;
-}
-
-.cm-wrapper.cm-wrapper-is-zoomed{
-position: fixed;
-left: 0;
-top: 0;
-right: 0;
-bottom: 0;
-z-index: 999999;
-width: auto;
-max-width: none;
-border-color: #0000;
-border-radius: 0;
-/*box-shadow: 0 18px 60px #0000002e;*/
-display: flex;
-flex-direction: column;
-}
-
-.cm-wrapper.cm-wrapper-is-zoomed .cm-body{
-flex: 1 1;
-}
-
-.cm-tabs{
-position: sticky;
-z-index: 5;
-user-select: none;
-display: flex;
-background: #fafafa;
-border-bottom: 1px solid #0000;
-height: 36px;
-/*overflow: hidden;*/
-border-radius: 12px 12px 0px 0px;
-}
-
-.cm-tab{
-position: relative;
-height: 34px;
-transition: 0.2s;
-font-family: system-ui;
-line-height: 0;
-border: none;
-padding: 10px 0;
-cursor: pointer;
-background: none;
-width: 100px;
-margin: 2px 2px;
-margin-right: 0;
-margin-bottom: 0;
-border-radius: 10px;
-display: flex;
-justify-content: center;
-align-items: center;
-}
-.cm-tab:hover {
-background: #6774850e;
-}
-.cm-tab:active {
-transition: 0.0s;
-background: #67748521;
-}
-.cm-tab::before {
-position: absolute;
-transition: 0.1s;
-content: '';
-bottom: -3px;
-height: 3px;
-width: 30%;
-border-radius: 5px;
-opacity: 0;
-background: #3b91e1;
-}
-
-.cm-tab.active{
-font-weight: bold;
-}
-.cm-tab.active::before {
-width: 50%;
-opacity: 1 !important;
-}
-
-.cm-body{
-position: relative;
-display: flex;
-height: 500px;
-background: #fafafa;
-border-radius: 12px;
-/*overflow: hidden;*/
-}
-.cm-body div {
-    flex: 1 1;
-    scrollbar-color: #525d6547 transparent;
-}
-
-.cm-editor{
-display: flex;
-overflow: hidden;
-min-width: 0;
-flex: 1 1;
-font-family: monospace;
-font-size: 14px;
-line-height: 1.5;
-background: #fafafa;
-border-radius: 12px 12px 12px 12px;
-}
-
-.cm-body .cm-editor{
-flex: 1 1;
-}
-
-.cm-line-numbers{
-    flex: 0 0 46px !important;
-    width: 46px;
-    overflow: auto;
-    scrollbar-width: none;
-    padding: 15px 0px 15px 0;
-    box-sizing: border-box;
-    color: #9aa4af;
-    text-align: right;
-    user-select: none;
-    pointer-events: none;
-    white-space: pre;
-    font-family: monospace;
-    font-size: 14px;
-    line-height: 1.5;
-    border-right: 1px solid #e7eaf0;
-    background: #f3f5f8;
-}
-
-.cm-line-numbers div{
-height: 21px;
-text-align: center
-}
-
-.cm-code{
-flex: 1 1 !important;
-min-width: 0;
-font-size: 14px;
-line-height: 1.5;
-padding: 15px;
-padding-right: 0px;
-overflow: scroll;
-white-space: pre;
-color: #5e656b;
-font-family: monospace;
-outline: none;
-direction: ltr;
-text-align: left;
-tab-size: 4;
-}
-
-.cm-syntax-tag { color: #3f454da1; font-weight: 700; }
-.cm-syntax-tag-name { color: #b85e8e; font-weight: 700; }
-.cm-syntax-attr { color: #8a5cf6; }
-.cm-syntax-attr-important { color: #d99559; font-weight: 700; }
-.cm-syntax-string { color: #426db6; }
-.cm-syntax-keyword { color: #b91c1c; font-weight: 700; }
-.cm-syntax-number { color: #0e7490; }
-.cm-syntax-comment { color: #7c8794; font-style: italic; }
-.cm-syntax-operator { color: #656f79; font-weight: 700; }
-.cm-syntax-brace { color: #ca8a04; font-weight: 700; }
-.cm-syntax-bracket { color: #9333ea; font-weight: 700; }
-.cm-syntax-paren { color: #0891b2; font-weight: 700; }
-.cm-syntax-color { color: #426db6; font-weight: 700; }
-.cm-color-swatch{
-display: inline-block;
-width: 11px;
-height: 11px;
-margin: 0 4px 0 2px;
-border: 1px solid #9aa4af;
-border-radius: 2px;
-box-sizing: border-box;
-vertical-align: -1px;
-cursor: pointer;
-}
-.cm-color-input{
-position: fixed;
-left: -100px;
-top: -100px;
-width: 1px;
-height: 1px;
-opacity: 0;
-}
-
-.cm-preview{
-margin: 4px;
-margin-left: 0;
-font-family: monospace;
-border-radius: 10px;
-background: white;
-box-shadow: 0 0 0 1px #dddddd;
-width: 50%;
-}
-
-.cm-preview iframe{
-width:100%;
-height:100%;
-border:none;
-border-radius: 10px;
-}
-@media (max-width: 768px) {
-    .cm-tab {
-        width: 60px;
-    }
-}
-@media (hover: none) and (pointer: coarse) {
-.Touch-mode .cm-preview {
-    position: absolute;
-    margin-left: 4px;
-    width: auto;
-    inset: 0;
-}
-}
-* {
-    -webkit-tap-highlight-color: transparent;
-}
-`;
-
-document.head.appendChild(style);
-
-})();
