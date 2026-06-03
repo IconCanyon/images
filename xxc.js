@@ -760,6 +760,7 @@ max-width: 100%;
 
 .ccvvde3r4 {
 position: absolute;
+z-index: 10;
 right: 0;
 top: 0;
 height: 36px;
@@ -840,6 +841,8 @@ flex: 1 1;
 }
 
 .cm-tabs{
+position: sticky;
+z-index: 5;
 user-select: none;
 display: flex;
 background: #fafafa;
@@ -895,6 +898,7 @@ opacity: 1 !important;
 }
 
 .cm-body{
+position: relative;
 display: flex;
 height: 500px;
 background: #fafafa;
@@ -1016,6 +1020,14 @@ border-radius: 10px;
     .cm-tab {
         width: 60px;
     }
+}
+@media (hover: none) and (pointer: coarse) {
+.Touch-mode .cm-preview {
+    position: absolute;
+    margin-left: 4px;
+    width: auto;
+    inset: 0;
+}
 }
 * {
     -webkit-tap-highlight-color: transparent;
